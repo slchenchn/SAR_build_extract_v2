@@ -118,10 +118,10 @@ class DomainAdaptationDataset(CustomDataset):
         for domain in self.domains:
             # NOTE: use same index for source and target domain, don't know whether matters or not
             img_info = self.img_infos[domain][idx]
-            ann_info = self.get_ann_info(idx, domain)
+            ann_info = self.get_ann_info(idx, domain=domain)
             results[domain] = dict(img_info=img_info, ann_info=ann_info,
                                     domain=self.domain_map[domain])
-            self.pre_pipeline(results[domain], domain)
+            self.pre_pipeline(results[domain], domain=domain)
 
             results[domain] = self.pipeline(results[domain])
         return results

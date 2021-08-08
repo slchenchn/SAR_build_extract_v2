@@ -6,6 +6,7 @@ Last Modified: 2021-07-13
 '''
 
 dataset_type = 'SARBuildingDomainAdaptation'
+eval_dataset_type = 'Sar_building'
 data_root = dict(src='data/ade20k/sar_building_rs2',
                 tgt='data/ade20k/sar_building_gf3')
                 
@@ -41,10 +42,10 @@ test_pipeline = [
 ]
 
 data = dict(
-    # samples_per_gpu=1,
-    # workers_per_gpu=2,
-    samples_per_gpu=2,
-    workers_per_gpu=4,
+    samples_per_gpu=1,
+    workers_per_gpu=2,
+    # samples_per_gpu=2,
+    # workers_per_gpu=4,
     train=dict(
         type=dataset_type,
         data_root=data_root,
@@ -53,14 +54,14 @@ data = dict(
         pipeline=train_pipeline),
     val=dict(
         # type='Sar_building',
-        type=dataset_type,
+        type=eval_dataset_type,
         data_root=data_root['tgt'],
         img_dir='images/validation',
         ann_dir='annotations/validation',
         pipeline=test_pipeline),
     test=dict(
         # type='Sar_building',
-        type=dataset_type,
+        type=eval_dataset_type,
         data_root=data_root['tgt'],
         img_dir='images/test',
         ann_dir='annotations/test',

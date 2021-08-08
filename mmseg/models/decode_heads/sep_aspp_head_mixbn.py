@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from mmcv.cnn import ConvModuleMixBN, DepthwiseSeparableConvModuleMixBN
+from ..layers import ConvModuleMixBN, DepthwiseSeparableConvModuleMixBN, SequentialMixBN
 
 from mmseg.ops import resize
 from ..builder import HEADS
@@ -59,7 +59,7 @@ class DepthwiseSeparableASPPHeadMixBN(ASPPHeadMixBN):
                 act_cfg=self.act_cfg)
         else:
             self.c1_bottleneck = None
-        self.sep_bottleneck = nn.Sequential(
+        self.sep_bottleneck = SequentialMixBN(
             DepthwiseSeparableConvModuleMixBN(
                 self.channels + c1_channels,
                 self.channels,
@@ -75,27 +75,27 @@ class DepthwiseSeparableASPPHeadMixBN(ASPPHeadMixBN):
                 norm_cfg=self.norm_cfg,
                 act_cfg=self.act_cfg))
 
-    def forward(self, inputs, domains):
+    def forward(self, inputs, domain):
         """Forward function."""
         x = self._transform_inputs(inputs)
         aspp_outs = [
             resize(
-                self.image_pool(x, domains),
+                self.image_pool(x, domain=domain),
                 size=x.size()[2:],
                 mode='bilinear',
                 align_corners=self.align_corners)
         ]
-        aspp_outs.extend(self.aspp_modules(x, domains))
+        aspp_outs.extend(self.aspp_modules(x, domain=domain))
         aspp_outs = torch.cat(aspp_outs, dim=1)
-        output = self.bottleneck(aspp_outs, domains)
+        output = self.bottleneck(aspp_outs, domain=domain)
         if self.c1_bottleneck is not None:
-            c1_output = self.c1_bottleneck(inputs[0], domains)
+            c1_output = self.c1_bottleneck(inputs[0], domain=domain)
             output = resize(
                 input=output,
                 size=c1_output.shape[2:],
                 mode='bilinear',
                 align_corners=self.align_corners)
             output = torch.cat([output, c1_output], dim=1)
-        output = self.sep_bottleneck(output, domains)
+        output = self.sep_bottleneck(output, domain=domain)
         output = self.cls_seg(output)
         return output

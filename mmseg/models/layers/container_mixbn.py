@@ -9,7 +9,7 @@ class SequentialMixBN(nn.Sequential):
     def forward(self, input, domain):
         for module in self:
             if 'bn' in str(type(module)):
-                input = module(input, domain)
+                input = module(input, domain=domain)
             else:
                 input = module(input)   
         return input

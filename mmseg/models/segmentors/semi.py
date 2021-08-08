@@ -26,11 +26,54 @@ class Semi(EncoderDecoder):
         self.detach = detach
         super().__init__(**kargs)
         
+    @staticmethod
+    def get_domains_slice(domain):
+
+        dst_idx = np.argwhere(domain).flatten()
+        src_idx = np.argwhere(np.logical_not(domain)).flatten()
+
+        return src_idx, dst_idx
+
+    @staticmethod
+    def check_domain(data, domain):
+        if domain is None:
+            if isinstance(data, list):
+                domain = np.zeros(len(data))
+            elif isinstance(data, torch.Tensor):
+                domain = np.zeros(data.shape[0])
+            else:
+                raise NotImplementedError
+        return domain
+
+    @staticmethod
+    def merge_domains_data(data, domain):
+        assert isinstance(data, (tuple, list))
+        assert data[0].shape[0] + data[1].shape[0] == domain.size()
+        assert data[0].shape[1:] == data[1].shape[1:]
+
+        new_data = torch.empty(size=(domain.size, *data[0].shape[1:]), device=data[0].device, dtype=data[0].dtype)
+        src_idx, dst_idx = Semi.get_domains_slice(domain=domain)
+        new_data[src_idx, ...] = data[0]
+        new_data[dst_idx, ...] = data[1]
+
+        return new_data
+
+    @staticmethod
+    def split_domins_data(data, domain):
+        assert domain.size() == data.shape[0]
+
+        src_idx, dst_idx = Semi.get_domains_slice(domain=domain)
+        src_data = data[src_idx, ...]
+        dst_data = data[dst_idx, ...]
+
+        return src_data, dst_data
+        
     def extract_feat(self, img, domain):
         """Extract features from images."""
-        x = self.backbone(img, domain)
+        domain = Semi.check_domain(domain=domain)
+        x = self.backbone(img, domain=domain)
         if self.with_neck:
-            x = self.neck(x, domain)
+            x = self.neck(x, domain=domain)
         return x
 
     @auto_fp16(apply_to=('img', ))
@@ -39,19 +82,18 @@ class Semi(EncoderDecoder):
         '''
 
         # extract domain index
-        domain = np.array([meta['domain'] for meta in img_metas], dtype=np.int64)
-        
-        x = self.extract_feat(img, domain)
+        domain = np.array([meta['domain'] for meta in img_metas], dtype=np.int64)        
+        x = self.extract_feat(img, domain=domain)
 
         losses = dict()
 
         loss_decode = self._decode_head_forward_train(x, img_metas,
-                                                      gt_semantic_seg, domain)
-        losses.update(loss_decode, domain)
+                                                      gt_semantic_seg, domain=domain)
+        losses.update(loss_decode)
 
         if self.with_auxiliary_head:
             loss_aux = self._auxiliary_head_forward_train(
-                x, img_metas, gt_semantic_seg, domain)
+                x, img_metas, gt_semantic_seg, domain=domain)
             losses.update(loss_aux)
 
         return losses

@@ -6,7 +6,7 @@ Last Modified: 2021-07-14
 '''
 import torch
 import torch.nn as nn
-from mmcv.cnn import ConvModuleMixBN
+from ..layers import ConvModuleMixBN
 
 from ..builder import HEADS
 from .decode_head import BaseDecodeHead
@@ -79,11 +79,11 @@ class FCNHeadMixBN(BaseDecodeHead):
                 norm_cfg=self.norm_cfg,
                 act_cfg=self.act_cfg)
 
-    def forward(self, inputs, domains):
+    def forward(self, inputs, domain):
         """Forward function."""
         x = self._transform_inputs(inputs)
-        output = self.convs(x, domains)
+        output = self.convs(x, domain=domain)
         if self.concat_input:
-            output = self.conv_cat(torch.cat([x, output], dim=1), domains)
+            output = self.conv_cat(torch.cat([x, output], dim=1), domain=domain)
         output = self.cls_seg(output)
         return output

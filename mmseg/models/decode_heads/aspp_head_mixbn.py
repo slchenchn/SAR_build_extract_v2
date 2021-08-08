@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from mmcv.cnn import ConvModuleMixBN
+from ..layers import ConvModuleMixBN
 
 from mmseg.ops import resize
 from ..builder import HEADS
@@ -34,11 +34,11 @@ class ASPPModuleMixBN(nn.ModuleList):
                     norm_cfg=self.norm_cfg,
                     act_cfg=self.act_cfg))
 
-    def forward(self, x, domains):
+    def forward(self, x, domain):
         """Forward function."""
         aspp_outs = []
         for aspp_module in self:
-            aspp_outs.append(aspp_module(x, domains))
+            aspp_outs.append(aspp_module(x, domain=domain))
 
         return aspp_outs
 
@@ -84,18 +84,18 @@ class ASPPHeadMixBN(BaseDecodeHead):
             norm_cfg=self.norm_cfg,
             act_cfg=self.act_cfg)
 
-    def forward(self, inputs, domains):
+    def forward(self, inputs, domain):
         """Forward function."""
         x = self._transform_inputs(inputs)
         aspp_outs = [
             resize(
-                self.image_pool(x, domains),
+                self.image_pool(x, domain=domain),
                 size=x.size()[2:],
                 mode='bilinear',
                 align_corners=self.align_corners)
         ]
-        aspp_outs.extend(self.aspp_modules(x, domains))
+        aspp_outs.extend(self.aspp_modules(x, domain=domain))
         aspp_outs = torch.cat(aspp_outs, dim=1)
-        output = self.bottleneck(aspp_outs, domains)
+        output = self.bottleneck(aspp_outs, domain=domain)
         output = self.cls_seg(output)
         return output

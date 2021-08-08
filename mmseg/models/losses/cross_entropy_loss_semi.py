@@ -1,3 +1,5 @@
+''' deprecated '''
+
 import numpy as np
 
 from ..builder import LOSSES

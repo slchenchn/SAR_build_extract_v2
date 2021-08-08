@@ -26,14 +26,14 @@ model = dict(
         norm_cfg = norm_cfg,
         num_classes=2,
         loss_decode=dict(
-            type='CrossEntropyLossSemi', use_sigmoid=False, loss_weight=1.0)
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)
     ),
     auxiliary_head=dict(
         type='FCNHeadMixBN',
         norm_cfg = norm_cfg,
         num_classes=2,
         loss_decode=dict(
-            type='CrossEntropyLossSemi', use_sigmoid=False, loss_weight=1.0)
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)
     ),
 )
 

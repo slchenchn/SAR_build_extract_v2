@@ -1,1 +1,3 @@
 from .container_mixbn import SequentialMixBN
+from .conv_module_mixbn import ConvModuleMixBN
+from .depthwise_separable_conv_module import DepthwiseSeparableConvModuleMixBN
