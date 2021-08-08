@@ -7,7 +7,7 @@ from mmcv.runner import BaseModule
 from mmcv.utils.parrots_wrapper import _BatchNorm
 
 from ..builder import BACKBONES
-from ..utils import ResLayer
+from ..utils import ResLayerMixBN
 
 from ..layers import SequentialMixBN
 
@@ -292,7 +292,7 @@ class BottleneckMixBN(BaseModule):
                 out = self.forward_plugin(out, self.after_conv3_plugin_names)
 
             if self.downsample is not None:
-                identity = self.downsample(x)
+                identity = self.downsample(x, domain=domain)
 
             out += identity
 
@@ -483,7 +483,7 @@ class ResNetMixBN(BaseModule):
             stage_multi_grid = multi_grid if i == len(
                 self.stage_blocks) - 1 else None
             planes = base_channels * 2**i
-            res_layer = self.make_res_layer(
+            res_layer = self.make_res_layer_mixbn(
                 block=self.block,
                 inplanes=self.inplanes,
                 planes=planes,
@@ -563,9 +563,9 @@ class ResNetMixBN(BaseModule):
 
         return stage_plugins
 
-    def make_res_layer(self, **kwargs):
+    def make_res_layer_mixbn(self, **kwargs):
         """Pack all blocks in a stage into a ``ResLayer``."""
-        return ResLayer(**kwargs)
+        return ResLayerMixBN(**kwargs)
 
     @property
     def norm1(self):

@@ -4,7 +4,7 @@ from ..layers import ConvModuleMixBN
 
 from mmseg.ops import resize
 from ..builder import HEADS
-from .decode_head import BaseDecodeHead
+from .decode_head_mixbn import BaseDecodeHeadMixBN
 
 from.aspp_head import ASPPHead, ASPPModule
 
@@ -44,7 +44,7 @@ class ASPPModuleMixBN(nn.ModuleList):
 
 
 @HEADS.register_module()
-class ASPPHeadMixBN(BaseDecodeHead):
+class ASPPHeadMixBN(BaseDecodeHeadMixBN):
     """Rethinking Atrous Convolution for Semantic Image Segmentation.
 
     This head is the implementation of `DeepLabV3

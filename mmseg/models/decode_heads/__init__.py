@@ -32,6 +32,7 @@ from .aspp_head_mixbn import ASPPHeadMixBN
 from .sep_aspp_head_mixbn import ASPPHeadMixBN
 from .fcn_head_mixbn import FCNHeadMixBN
 from .new_fcn_head import NewFCNHead
+from .decode_head_mixbn import BaseDecodeHeadMixBN
 
 # __all__ = [
 #     'FCNHead', 'PSPHead', 'ASPPHead', 'PSAHead', 'NLHead', 'GCHead', 'CCHead',

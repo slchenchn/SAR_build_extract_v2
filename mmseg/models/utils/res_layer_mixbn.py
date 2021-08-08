@@ -1,8 +1,8 @@
 from mmcv.cnn import build_conv_layer, build_norm_layer
+from ..layers import SequentialMixBN
 from torch import nn as nn
 
-from .res_layer import ResLayer
-class ResLayerMixBN(ResLayer):
+class ResLayerMixBN(SequentialMixBN):
     """
     """
 
@@ -43,7 +43,7 @@ class ResLayerMixBN(ResLayer):
                     bias=False),
                 build_norm_layer(norm_cfg, planes * block.expansion)[1]
             ])
-            downsample = nn.Sequential(*downsample)
+            downsample = SequentialMixBN(*downsample)
 
         layers = []
         if multi_grid is None:
@@ -74,4 +74,4 @@ class ResLayerMixBN(ResLayer):
                     conv_cfg=conv_cfg,
                     norm_cfg=norm_cfg,
                     **kwargs))
-        super(ResLayer, self).__init__(*layers)
+        super().__init__(*layers)

@@ -12,6 +12,7 @@ import numpy as np
 from mmcv.utils.parrots_wrapper import _BatchNorm
 from mmcv.cnn import initialize
 from mmcv.runner import auto_fp16
+from mmseg.core import add_prefix
 
 from ..builder import SEGMENTORS
 from .encoder_decoder import EncoderDecoder
@@ -96,6 +97,17 @@ class Semi(EncoderDecoder):
                 x, img_metas, gt_semantic_seg, domain=domain)
             losses.update(loss_aux)
 
+        return losses
+
+    def _decode_head_forward_train(self, x, img_metas, gt_semantic_seg, domain):
+        """Run forward function and calculate loss for decode head in
+        training."""
+        losses = dict()
+        loss_decode = self.decode_head.forward_train(x, img_metas,
+                                                     gt_semantic_seg,
+                                                     self.train_cfg, domain=domain)
+
+        losses.update(add_prefix(loss_decode, 'decode'))
         return losses
 
     def forward(self, img, img_metas, return_loss=True, **kwargs):

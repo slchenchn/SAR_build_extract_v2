@@ -7,8 +7,10 @@ from .se_layer import SELayer
 from .self_attention_block import SelfAttentionBlock
 from .up_conv_block import UpConvBlock
 
-__all__ = [
-    'ResLayer', 'SelfAttentionBlock', 'make_divisible', 'InvertedResidual',
-    'UpConvBlock', 'InvertedResidualV3', 'SELayer', 'vit_convert',
-    'swin_convert', 'PatchEmbed'
-]
+from .res_layer_mixbn import ResLayerMixBN
+
+# __all__ = [
+#     'ResLayer', 'SelfAttentionBlock', 'make_divisible', 'InvertedResidual',
+#     'UpConvBlock', 'InvertedResidualV3', 'SELayer', 'vit_convert',
+#     'swin_convert', 'PatchEmbed'
+# ]
