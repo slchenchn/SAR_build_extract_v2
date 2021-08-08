@@ -94,7 +94,7 @@ class MixBN(BatchNorm2d):
             # output[dst_idx, ...] = dst_output
             # output[src_idx, ...] = src_ouput
             
-            return src_ouput
+            return output
 
 
 

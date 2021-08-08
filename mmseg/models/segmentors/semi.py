@@ -48,7 +48,7 @@ class Semi(EncoderDecoder):
     @staticmethod
     def merge_domains_data(data, domain):
         assert isinstance(data, (tuple, list))
-        assert data[0].shape[0] + data[1].shape[0] == domain.size()
+        assert data[0].shape[0] + data[1].shape[0] == domain.size
         assert data[0].shape[1:] == data[1].shape[1:]
 
         new_data = torch.empty(size=(domain.size, *data[0].shape[1:]), device=data[0].device, dtype=data[0].dtype)
@@ -60,7 +60,7 @@ class Semi(EncoderDecoder):
 
     @staticmethod
     def split_domins_data(data, domain):
-        assert domain.size() == data.shape[0]
+        assert domain.size == data.shape[0]
 
         src_idx, dst_idx = Semi.get_domains_slice(domain=domain)
         src_data = data[src_idx, ...]
@@ -70,7 +70,7 @@ class Semi(EncoderDecoder):
         
     def extract_feat(self, img, domain):
         """Extract features from images."""
-        domain = Semi.check_domain(domain=domain)
+        domain = Semi.check_domain(data=img, domain=domain)
         x = self.backbone(img, domain=domain)
         if self.with_neck:
             x = self.neck(x, domain=domain)
