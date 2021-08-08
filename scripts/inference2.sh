@@ -1,0 +1,16 @@
+export CUDA_VISIBLE_DEVICES=1
+# python inference.py ./sar_building/deeplabv3p.py	./work_dirs/gf3/deeplabv3plus_r50-d8_512x512_80k_ade20k/iter_300.pth	/home/ghw/mmsegmentation/data/ade20k/sar_building_rs2/images/test	/data2/ghw/sar_segm_inference/gf-rs/deeplabv3p
+# python inference.py ./sar_building/fcn_r50-d8.py	./work_dirs/gf3/fcn_r50-d8/iter_500.pth	/home/ghw/mmsegmentation/data/ade20k/sar_building_rs2/images/test	/data2/ghw/sar_segm_inference/gf-rs/fcn
+# python inference.py ./sar_building/ocrnet_hr48.py	./work_dirs/gf3/ocrnet_hr48_512x512_80k_ade20k/iter_800.pth	/home/ghw/mmsegmentation/data/ade20k/sar_building_rs2/images/test	/data2/ghw/sar_segm_inference/gf-rs/ocrnet
+# python inference.py ./sar_building/nonlocal_r50.py	./work_dirs/gf3/nonlocal_r50-d8_512x512_80k_ade20k/iter_600.pth	/home/ghw/mmsegmentation/data/ade20k/sar_building_rs2/images/test	/data2/ghw/sar_segm_inference/gf-rs/nonlocal
+# python inference.py ./sar_building/danet_r50.py	./work_dirs/gf3/danet_r50-d8_512x512_80k_ade20k/iter_300.pth	/home/ghw/mmsegmentation/data/ade20k/sar_building_rs2/images/test	/data2/ghw/sar_segm_inference/gf-rs/danet
+# python inference.py ./sar_building/deeplabv3p.py	./work_dirs/rs2/deeplabv3plus_r50-d8_512x512_80k_ade20k/iter_800.pth	/home/ghw/mmsegmentation/data/ade20k/sar_building_gf3/images/test	/data2/ghw/sar_segm_inference/rs-gf/deeplabv3p
+# python inference.py ./sar_building/fcn_r50-d8.py	./work_dirs/rs2/fcn_r50-d8/iter_700.pth	/home/ghw/mmsegmentation/data/ade20k/sar_building_gf3/images/test	/data2/ghw/sar_segm_inference/rs-gf/fcn
+# python inference.py ./sar_building/ocrnet_hr48.py	./work_dirs/rs2/ocrnet_hr48_512x512_80k_ade20k/iter_700.pth	/home/ghw/mmsegmentation/data/ade20k/sar_building_gf3/images/test	/data2/ghw/sar_segm_inference/rs-gf/ocrnet
+# python inference.py ./sar_building/nonlocal_r50.py	./work_dirs/rs2/nonlocal_r50-d8_512x512_80k_ade20k/iter_800.pth	/home/ghw/mmsegmentation/data/ade20k/sar_building_gf3/images/test	/data2/ghw/sar_segm_inference/rs-gf/nonlocal
+# python inference.py ./sar_building/danet_r50.py	./work_dirs/rs2/danet_r50-d8_512x512_80k_ade20k/iter_800.pth	/home/ghw/mmsegmentation/data/ade20k/sar_building_gf3/images/test	/data2/ghw/sar_segm_inference/rs-gf/danet
+python inference.py ./sar_building/multi_channel/deeplabv3p.py	/data2/ghw/mmseg_workdir/multi_channel/deeplabv3plus_r50-d8_512x512_80k_ade20k/iter_1500.pth	/data2/ghw/sar_building/npy/test	/data2/ghw/sar_segm_inference/9ch/deeplabv3p
+python inference.py ./sar_building/multi_channel/fcn_r50-d8.py	/data2/ghw/mmseg_workdir/multi_channel/fcn_r50-d8/iter_1600.pth	/data2/ghw/sar_building/npy/test	/data2/ghw/sar_segm_inference/9ch/fcn
+python inference.py ./sar_building/multi_channel/ocrnet_hr48.py	/data2/ghw/mmseg_workdir/multi_channel/ocrnet_hr48_512x512_80k_ade20k/iter_1500.pth	/data2/ghw/sar_building/npy/test	/data2/ghw/sar_segm_inference/9ch/ocrnet
+python inference.py ./sar_building/multi_channel/nonlocal_r50.py	/data2/ghw/mmseg_workdir/multi_channel/nonlocal_r50-d8_512x512_80k_ade20k/iter_1500.pth	/data2/ghw/sar_building/npy/test	/data2/ghw/sar_segm_inference/9ch/nonlocal
+python inference.py ./sar_building/multi_channel/danet_r50.py	/data2/ghw/mmseg_workdir/multi_channel/danet_r50-d8_512x512_80k_ade20k/iter_1500.pth	/data2/ghw/sar_building/npy/test	/data2/ghw/sar_segm_inference/9ch/danet
