@@ -1,3 +1,9 @@
+'''
+Author: Shuailin Chen
+Created Date: 2021-08-08
+Last Modified: 2021-08-10
+	content: 
+'''
 import copy
 import platform
 import random
@@ -61,8 +67,13 @@ def _concat_dataset(cfg, default_args=None):
 def build_dataset(cfg, default_args=None):
     """Build datasets."""
     from .dataset_wrappers import ConcatDataset, RepeatDataset
+    from .my_dataset_wrappers import MyConcatDataset
     if isinstance(cfg, (list, tuple)):
         dataset = ConcatDataset([build_dataset(c, default_args) for c in cfg])
+    elif cfg['type'] == 'MyConcatDataset':
+        dataset = MyConcatDataset(
+            [build_dataset(c, default_args) for c in cfg['datasets']],
+            cfg.get('separate_eval', True))
     elif cfg['type'] == 'RepeatDataset':
         dataset = RepeatDataset(
             build_dataset(cfg['dataset'], default_args), cfg['times'])
