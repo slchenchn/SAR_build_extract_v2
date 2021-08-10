@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-04
-Last Modified: 2021-08-04
+Last Modified: 2021-08-10
 	content: dataset for domain adaptation
 '''
 
@@ -29,8 +29,8 @@ class DomainAdaptationDataset(CustomDataset):
                  reduce_zero_label=False,
                  classes=None,
                  palette=None,
-                 domains=('src', 'tgt'),
-                 domain_map={'src':0, 'tgt':1},
+                 domains=('src', 'dst'),
+                 domain_map={'src':0, 'dst':1},
                  ):
 
         self.domains = domains
@@ -73,6 +73,10 @@ class DomainAdaptationDataset(CustomDataset):
                                                 self.seg_map_suffix[domain], 
                                                 self.split.get(domain, None))
             })
+
+    def __len__(self):
+        ''' Important, becauset the dataloader need this to determine the data index '''
+        return len(self.img_infos[self.domains[0]])
 
     def _check_dict_inputs(self, **kargs):
         for key, value in kargs.items():

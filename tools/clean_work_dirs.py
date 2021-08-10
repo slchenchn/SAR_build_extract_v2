@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-08
-Last Modified: 2021-08-08
+Last Modified: 2021-08-10
 	content: clear unnecessary work_dirs
 '''
 
@@ -12,7 +12,7 @@ from glob import glob
 import shutil
 
 
-def clean_no_run_dirs(path, bytes_threshold=50):
+def clean_no_run_dirs(path, bytes_threshold=600):
     ''' Clean work dirs for debug, where the model not actually run for a single iteration    
 
     Args:

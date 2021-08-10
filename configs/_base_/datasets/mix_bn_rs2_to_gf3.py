@@ -8,7 +8,7 @@ Last Modified: 2021-08-10
 dataset_type = 'SARBuildingDomainAdaptation'
 eval_dataset_type = 'Sar_building'
 data_root = dict(src='data/ade20k/sar_building_rs2',
-                tgt='data/ade20k/sar_building_gf3')
+                dst='data/ade20k/sar_building_gf3')
                 
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
@@ -41,9 +41,38 @@ test_pipeline = [
         ])
 ]
 
+data_val_src = dict(
+        type=dataset_type,
+        data_root=data_root['src'],
+        img_dir='images/validation',
+        ann_dir='annotations/validation',
+        pipeline=train_pipeline
+)
+data_val_dst = dict(
+        type=dataset_type,
+        data_root=data_root['dst'],
+        img_dir='images/validation',
+        ann_dir='annotations/validation',
+        pipeline=train_pipeline
+)
+data_test_src = dict(
+        type=dataset_type,
+        data_root=data_root['src'],
+        img_dir='images/test',
+        ann_dir='annotations/test',
+        pipeline=train_pipeline
+)
+data_test_dst = dict(
+        type=dataset_type,
+        data_root=data_root['dst'],
+        img_dir='images/test',
+        ann_dir='annotations/test',
+        pipeline=train_pipeline
+)
+
 data = dict(
     samples_per_gpu=2,
-    workers_per_gpu=4,
+    workers_per_gpu=2,
     # samples_per_gpu=2,
     # workers_per_gpu=4,
     train=dict(
@@ -53,17 +82,13 @@ data = dict(
         ann_dir='annotations/training',
         pipeline=train_pipeline),
     val=dict(
-        # type='Sar_building',
-        type=eval_dataset_type,
-        data_root=data_root['tgt'],
-        img_dir='images/validation',
-        ann_dir='annotations/validation',
-        pipeline=test_pipeline),
+        type='MyConcatDataset',
+        datasets=[data_val_src, data_val_dst],
+        separate_eval=True,
+        ),
     test=dict(
-        # type='Sar_building',
-        type=eval_dataset_type,
-        data_root=data_root['tgt'],
-        img_dir='images/test',
-        ann_dir='annotations/test',
-        pipeline=test_pipeline)
+        type='MyConcatDataset',
+        datasets=[data_test_src, data_test_dst],
+        separate_eval=True,
+        ),
     )

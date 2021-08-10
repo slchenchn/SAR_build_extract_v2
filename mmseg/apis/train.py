@@ -1,3 +1,9 @@
+'''
+Author: Shuailin Chen
+Created Date: 2021-08-08
+Last Modified: 2021-08-10
+	content: 
+'''
 import random
 import warnings
 
@@ -54,6 +60,11 @@ def train_segmentor(model,
             # persistent_workers=False,
             drop_last=True) for ds in dataset
     ]
+
+    # loader = data_loaders[0]
+    # print(len(loader))
+    # for t in iter(loader):
+    #     print(t)
 
     # put model on gpus
     if distributed:
