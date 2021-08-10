@@ -1,11 +1,15 @@
-from mmcv.utils import Registry
+'''
+Author: Shuailin Chen
+Created Date: 2021-08-08
+Last Modified: 2021-08-10
+	content: 
+'''
+
 from mmcv.cnn import NORM_LAYERS
-from torch import nn
+import torch.nn.functional as F
 import torch
 from torch.nn.modules.batchnorm import _BatchNorm, BatchNorm2d
-import numpy as np
-from typing import Union, Tuple, Any, Callable, Iterator, Set, Optional
-from torch import Tensor, device, dtype
+
 
 from ..segmentors import Semi
 
