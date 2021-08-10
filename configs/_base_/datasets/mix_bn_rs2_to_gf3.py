@@ -42,32 +42,32 @@ test_pipeline = [
 ]
 
 data_val_src = dict(
-        type=dataset_type,
+        type=eval_dataset_type,
         data_root=data_root['src'],
         img_dir='images/validation',
         ann_dir='annotations/validation',
-        pipeline=train_pipeline
+        pipeline=test_pipeline
 )
 data_val_dst = dict(
-        type=dataset_type,
+        type=eval_dataset_type,
         data_root=data_root['dst'],
         img_dir='images/validation',
         ann_dir='annotations/validation',
-        pipeline=train_pipeline
+        pipeline=test_pipeline
 )
 data_test_src = dict(
-        type=dataset_type,
+        type=eval_dataset_type,
         data_root=data_root['src'],
         img_dir='images/test',
         ann_dir='annotations/test',
-        pipeline=train_pipeline
+        pipeline=test_pipeline
 )
 data_test_dst = dict(
-        type=dataset_type,
+        type=eval_dataset_type,
         data_root=data_root['dst'],
         img_dir='images/test',
         ann_dir='annotations/test',
-        pipeline=train_pipeline
+        pipeline=test_pipeline
 )
 
 data = dict(

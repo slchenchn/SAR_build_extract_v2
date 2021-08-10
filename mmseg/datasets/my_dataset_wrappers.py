@@ -1,3 +1,9 @@
+'''
+Author: Shuailin Chen
+Created Date: 2021-08-08
+Last Modified: 2021-08-10
+	content: 
+'''
 
 from mmcv.utils import print_log
 
@@ -56,7 +62,7 @@ class MyConcatDataset(ConcatDataset):
 
                 results_per_dataset = results[start_idx:end_idx]
                 print_log(
-                    f'\nEvaluateing {dataset.ann_file} with '
+                    f'\nEvaluateing {dataset.ann_dir} with '
                     f'{len(results_per_dataset)} images now',
                     logger=logger)
 
