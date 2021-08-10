@@ -1,19 +1,20 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-07-12
-Last Modified: 2021-07-14
+Last Modified: 2021-08-10
 	content: 
 '''
 import torch
 import torch.nn as nn
-from ..layers import ConvModuleMixBN
+from ..layers import ConvModuleMixBN, SequentialMixBN
+from ..segmentors import Semi
 
 from ..builder import HEADS
-from .decode_head import BaseDecodeHead
+from .decode_head_mixbn import BaseDecodeHeadMixBN
 
 
 @HEADS.register_module()
-class FCNHeadMixBN(BaseDecodeHead):
+class FCNHeadMixBN(BaseDecodeHeadMixBN):
     """Fully Convolution Networks for Semantic Segmentation.
 
     This head is implemented of `FCNNet <https://arxiv.org/abs/1411.4038>`_.
@@ -68,7 +69,7 @@ class FCNHeadMixBN(BaseDecodeHead):
                         conv_cfg=self.conv_cfg,
                         norm_cfg=self.norm_cfg,
                         act_cfg=self.act_cfg))
-            self.convs = nn.Sequential(*convs)
+            self.convs = SequentialMixBN(*convs)
         if self.concat_input:
             self.conv_cat = ConvModuleMixBN(
                 self.in_channels + self.channels,
@@ -79,9 +80,11 @@ class FCNHeadMixBN(BaseDecodeHead):
                 norm_cfg=self.norm_cfg,
                 act_cfg=self.act_cfg)
 
-    def forward(self, inputs, domain):
-        """Forward function."""
+    def forward(self, inputs, domain=None):
         x = self._transform_inputs(inputs)
+
+        domain = Semi.check_domain(data=x, domain=domain)
+
         output = self.convs(x, domain=domain)
         if self.concat_input:
             output = self.conv_cat(torch.cat([x, output], dim=1), domain=domain)

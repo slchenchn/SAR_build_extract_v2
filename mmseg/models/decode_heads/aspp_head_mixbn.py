@@ -1,6 +1,12 @@
+'''
+Author: Shuailin Chen
+Created Date: 2021-08-08
+Last Modified: 2021-08-10
+	content: 
+'''
 import torch
 import torch.nn as nn
-from ..layers import ConvModuleMixBN
+from ..layers import ConvModuleMixBN, SequentialMixBN
 
 from mmseg.ops import resize
 from ..builder import HEADS
@@ -59,7 +65,7 @@ class ASPPHeadMixBN(BaseDecodeHeadMixBN):
         super().__init__(**kwargs)
         assert isinstance(dilations, (list, tuple))
         self.dilations = dilations
-        self.image_pool = nn.Sequential(
+        self.image_pool = SequentialMixBN(
             nn.AdaptiveAvgPool2d(1),
             ConvModuleMixBN(
                 self.in_channels,

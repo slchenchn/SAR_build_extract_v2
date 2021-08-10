@@ -1,3 +1,9 @@
+'''
+Author: Shuailin Chen
+Created Date: 2021-08-08
+Last Modified: 2021-08-10
+	content: 
+'''
 from collections.abc import Sequence
 
 import mmcv
@@ -280,10 +286,11 @@ class Collect(object):
             img_meta[key] = results[key]
         data['img_metas'] = DC(img_meta, cpu_only=True)
         for key in self.keys:
-            if isinstance(results[key], DC):
-                data[key] = results[key]
-            else:
-                data[key] = DC(results[key])
+            data[key] = results[key]
+            # if isinstance(results[key], DC):
+            #     data[key] = results[key]
+            # else:
+            #     data[key] = DC(results[key])
         return data
 
     def __repr__(self):

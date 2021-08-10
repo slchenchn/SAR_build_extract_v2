@@ -1,6 +1,13 @@
+'''
+Author: Shuailin Chen
+Created Date: 2021-08-08
+Last Modified: 2021-08-10
+	content: 
+'''
 import torch
 import torch.nn as nn
 from ..layers import ConvModuleMixBN, DepthwiseSeparableConvModuleMixBN, SequentialMixBN
+from ..segmentors import Semi
 
 from mmseg.ops import resize
 from ..builder import HEADS
@@ -75,9 +82,11 @@ class DepthwiseSeparableASPPHeadMixBN(ASPPHeadMixBN):
                 norm_cfg=self.norm_cfg,
                 act_cfg=self.act_cfg))
 
-    def forward(self, inputs, domain):
-        """Forward function."""
+    def forward(self, inputs, domain=None):
         x = self._transform_inputs(inputs)
+
+        domain = Semi.check_domain(data=x, domain=domain)
+
         aspp_outs = [
             resize(
                 self.image_pool(x, domain=domain),

@@ -15,11 +15,11 @@ from ..segmentors import Semi
 @NORM_LAYERS.register_module()
 class TestMixBN(nn.BatchNorm2d):
 
-    def forward(self, input, domain=None):
+    def forward(self, input, domain):
 
         src_input, dst_input = Semi.split_domins_data(input, domain=domain)
 
         src_output = super().forward(src_input)
 
-        
-        return 
+        output = Semi.merge_domains_data((src_output, dst_input), domain=domain)
+        return output

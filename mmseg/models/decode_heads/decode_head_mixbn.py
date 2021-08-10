@@ -1,14 +1,17 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-07-12
-Last Modified: 2021-07-14
+Last Modified: 2021-08-10
 	content: 
 ''' 
-
+from torch import Tensor
 from mmcv.runner import BaseModule, auto_fp16, force_fp32
+
+from mmseg.ops import resize
 
 from .decode_head import BaseDecodeHead
 from ..segmentors import Semi
+from ..losses import accuracy
 
 
 class BaseDecodeHeadMixBN(BaseDecodeHead):
@@ -33,65 +36,10 @@ class BaseDecodeHeadMixBN(BaseDecodeHead):
         """
         seg_logits = self.forward(inputs, domain=domain)
         
-        seg_logits_src = Semi.split_domins_data(seg_logits, domain=domain)
-        gt_semantic_seg = Semi.split_domins_data(gt_semantic_seg, domain=domain)
+        seg_logits_src, _ = Semi.split_domins_data(seg_logits, domain=domain)
+        gt_semantic_seg_src, _ = Semi.split_domins_data(gt_semantic_seg, domain=domain)
         
-        losses = self.losses(seg_logits, gt_semantic_seg)
+        losses = self.losses(seg_logits_src, gt_semantic_seg_src)
         return losses
 
-    def forward_test(self, inputs, img_metas, test_cfg):
-        """Forward function for testing.
 
-        Args:
-            inputs (list[Tensor]): List of multi-level img features.
-            img_metas (list[dict]): List of image info dict where each dict
-                has: 'img_shape', 'scale_factor', 'flip', and may also contain
-                'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
-                For details on the values of these keys see
-                `mmseg/datasets/pipelines/formatting.py:Collect`.
-            test_cfg (dict): The testing config.
-
-        Returns:
-            Tensor: Output segmentation map.
-        """
-        return self.forward(inputs)
-
-    def cls_seg(self, feat):
-        """Classify each pixel."""
-        if self.dropout is not None:
-            feat = self.dropout(feat)
-        output = self.conv_seg(feat)
-        return output
-
-    @force_fp32(apply_to=('seg_logit', ))
-    def losses(self, seg_logit, seg_label):
-        """Compute segmentation loss.
-        
-        Args:
-            seg_logit (list | Tensor): Tensor for original operation
-                chain, list for new operation chain
-        """
-
-        if self.sampler is not None:
-            seg_weight = self.sampler.sample(seg_logit, seg_label)
-        else:
-            seg_weight = None
-
-        loss = dict()
-        if isinstance(seg_logit, Tensor):
-            seg_logit = resize(
-                input=seg_logit,
-                size=seg_label.shape[2:],
-                mode='bilinear',
-                align_corners=self.align_corners)
-            seg_label = seg_label.squeeze(1)
-
-            loss['acc_seg'] = accuracy(seg_logit, seg_label)
-
-        loss['loss_seg'] = self.loss_decode(
-            seg_logit,
-            seg_label,
-            weight=seg_weight,
-            ignore_index=self.ignore_index)
-
-        return loss

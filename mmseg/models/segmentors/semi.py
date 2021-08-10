@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-04
-Last Modified: 2021-08-04
+Last Modified: 2021-08-10
 	content: 
 '''
 
@@ -12,6 +12,9 @@ import numpy as np
 from mmcv.utils.parrots_wrapper import _BatchNorm
 from mmcv.cnn import initialize
 from mmcv.runner import auto_fp16
+import mmcv.parallel.collate
+import mmcv.runner.iter_based_runner
+
 from mmseg.core import add_prefix
 
 from ..builder import SEGMENTORS
@@ -44,6 +47,13 @@ class Semi(EncoderDecoder):
                 domain = np.zeros(data.shape[0])
             else:
                 raise NotImplementedError
+        else:
+            if isinstance(data, list):
+                assert domain.size == len(data)
+            elif isinstance(data, torch.Tensor):
+                assert domain.size == data.shape[0]
+            else:
+                raise NotImplementedError
         return domain
 
     @staticmethod
@@ -69,7 +79,7 @@ class Semi(EncoderDecoder):
 
         return src_data, dst_data
         
-    def extract_feat(self, img, domain):
+    def extract_feat(self, img, domain=None):
         """Extract features from images."""
         domain = Semi.check_domain(data=img, domain=domain)
         x = self.backbone(img, domain=domain)
@@ -96,6 +106,23 @@ class Semi(EncoderDecoder):
             loss_aux = self._auxiliary_head_forward_train(
                 x, img_metas, gt_semantic_seg, domain=domain)
             losses.update(loss_aux)
+
+        return losses
+
+    def _auxiliary_head_forward_train(self, x, img_metas, gt_semantic_seg, domain=None):
+        """Run forward function and calculate loss for auxiliary head in
+        training."""
+        losses = dict()
+        if isinstance(self.auxiliary_head, nn.ModuleList):
+            for idx, aux_head in enumerate(self.auxiliary_head):
+                loss_aux = aux_head.forward_train(x, img_metas,
+                                                  gt_semantic_seg,
+                                                  self.train_cfg, domain=domain)
+                losses.update(add_prefix(loss_aux, f'aux_{idx}'))
+        else:
+            loss_aux = self.auxiliary_head.forward_train(
+                x, img_metas, gt_semantic_seg, self.train_cfg, domain=domain)
+            losses.update(add_prefix(loss_aux, 'aux'))
 
         return losses
 

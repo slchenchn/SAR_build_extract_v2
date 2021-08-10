@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-07-11
-Last Modified: 2021-07-13
+Last Modified: 2021-08-10
 	content: 
 '''
 
@@ -42,8 +42,8 @@ test_pipeline = [
 ]
 
 data = dict(
-    samples_per_gpu=1,
-    workers_per_gpu=2,
+    samples_per_gpu=2,
+    workers_per_gpu=4,
     # samples_per_gpu=2,
     # workers_per_gpu=4,
     train=dict(

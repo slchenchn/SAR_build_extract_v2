@@ -1,3 +1,9 @@
+'''
+Author: Shuailin Chen
+Created Date: 2021-08-08
+Last Modified: 2021-08-10
+	content: 
+'''
 from mmcv.cnn import DepthwiseSeparableConvModule
 from .conv_module_mixbn import ConvModuleMixBN
 
@@ -88,7 +94,7 @@ class DepthwiseSeparableConvModuleMixBN(DepthwiseSeparableConvModule):
             act_cfg=pw_act_cfg,
             **kwargs)
 
-    def forward(self, x, domain=None):
+    def forward(self, x, domain):
         x = self.depthwise_conv(x, domain=domain)
         x = self.pointwise_conv(x, domain=domain)
         return x
