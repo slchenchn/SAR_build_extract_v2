@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-08
-Last Modified: 2021-08-10
+Last Modified: 2021-08-11
 	content: 
 '''
 
@@ -27,28 +27,18 @@ class MixBN(BatchNorm2d):
     '''
 
     def __init__(self, num_features, ratio=0.5, detach=True, mode=0,
-                momentum=0.9, eps=1e-5, **kargs):
+                momentum=0.1, eps=1e-5, **kargs):
         super().__init__(num_features, eps=eps, momentum=momentum, **kargs)
 
         assert ratio>=0 and ratio <=1
         self.ratio = ratio
         self.detach = detach
         self.mode = mode
-        self.eps = eps
-        self.momentum = momentum
-        # self.weight = self.weight
-        # self.bias = self.bias
 
-        shape = (1, num_features, 1, 1)
-        self.running_mean_dst = torch.zeros(shape).cuda()
-        self.running_var_dst = torch.ones(shape).cuda()
+        # shape = (1, num_features, 1, 1)
+        self.running_mean_dst = torch.zeros(num_features).cuda()
+        self.running_var_dst = torch.ones(num_features).cuda()
 
-        # self.weight = nn.Parameter(torch.ones(shape)).cuda()
-        # self.bias = nn.Parameter(torch.zeros(shape)).cuda()
-        # self.running_mean = torch.zeros(shape).cuda()
-        # self.running_var = torch.ones(shape).cuda()
-
-            
     # def cuda(self, device=None):
     #     super().cuda(device=device)    
     #     self.weight.cuda(device=device) 
@@ -66,8 +56,9 @@ class MixBN(BatchNorm2d):
         '''
 
         if not torch.is_grad_enabled():
-            src_ouput, self.running_mean, self.running_var, _, _ = mix_bn(input, self.weight, self.bias, self.running_mean, self.running_var, self.eps, self.momentum, self.ratio, 0, 0)
-            return src_ouput
+            # src_ouput, self.running_mean, self.running_var, _, _ = mix_bn(input, self.weight, self.bias, self.running_mean, self.running_var, self.eps, self.momentum, self.ratio, 0, 0)
+            # return src_ouput
+            return super().forward(input)
         else:
             src_input, dst_input = Semi.split_domins_data(input, domain=domain)
 
@@ -110,8 +101,9 @@ def mix_bn(X, weight, bias, running_mean, running_var, eps, momentum, ratio,
     # Use `is_grad_enabled` to determine whether the current mode is training
     # mode or prediction mode
     if not torch.is_grad_enabled():
-        # If it is prediction mode, directly use the mean and variance
-        # obtained by running average
+        # deprecated !!!
+        weight = weight.reshape(1, weight.shape[0], 1, 1)
+        bias = bias.reshape(1, bias.shape[0], 1, 1)
         X_hat = (X - running_mean) / torch.sqrt(running_var + eps)
     else:
         local_mean = X.mean(dim=(0, 2, 3), keepdim=True)
@@ -123,8 +115,10 @@ def mix_bn(X, weight, bias, running_mean, running_var, eps, momentum, ratio,
         X_hat = (X - mean) / torch.sqrt(var + eps)
 
         # Update the mean and variance using running average
-        running_mean = momentum * running_mean + (1.0 - momentum) * mean
-        running_var = momentum * running_var + (1.0 - momentum) * var
+        running_mean = momentum * mean.squeeze() \
+                        + (1.0 - momentum) * running_mean
+        running_var = momentum * var.squeeze() \
+                        + (1.0 - momentum) * running_var
 
     # reshape for broadcasting
     weight = weight.reshape(1, weight.shape[0], 1, 1)

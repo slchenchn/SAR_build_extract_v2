@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-07-12
-Last Modified: 2021-08-10
+Last Modified: 2021-08-11
 	content: 
 '''
 import torch
@@ -11,6 +11,7 @@ from ..segmentors import Semi
 
 from ..builder import HEADS
 from .decode_head_mixbn import BaseDecodeHeadMixBN
+from .fcn_head import FCNHead
 
 
 @HEADS.register_module()

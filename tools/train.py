@@ -1,15 +1,10 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-08
-Last Modified: 2021-08-10
+Last Modified: 2021-08-11
 	content: 
 '''
-'''
-Author: Shuailin Chen
-Created Date: 2021-07-12
-Last Modified: 2021-07-12
-	content: 
-'''
+
 import argparse
 import copy
 import os
@@ -80,6 +75,9 @@ def main():
 
     if args.options is not None:
         cfg.merge_from_dict(args.options)
+
+    # print(cfg.model.backbone.norm_cfg.ratio, type(cfg.model.backbone.norm_cfg.ratio))
+
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
