@@ -1,11 +1,11 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-08
-Last Modified: 2021-08-10
+Last Modified: 2021-08-12
 	content: 
 '''
+
 from torch import nn
-import torch
 
 
 class SequentialMixBN(nn.Sequential):

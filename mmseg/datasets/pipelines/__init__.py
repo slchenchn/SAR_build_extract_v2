@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-07-12
-Last Modified: 2021-08-04
+Last Modified: 2021-08-11
 	content: 
 '''
 from .compose import Compose
@@ -14,7 +14,7 @@ from .transforms import (CLAHE, AdjustGamma, Normalize, Pad,
                          RandomRotate, Rerange, Resize, RGB2Gray, SegRescale)
 from .loading_npy import LoadNpyFromFile, LoadNpyFromFileRotate
 from .loading_npy_pca import LoadNpyFromFilePCA
-from .fda import FourierDomainAdaption
+from .fda import FourierDomainAdaptation
 from .formating_domain_adaptation import CollectDA
 
 # __all__ = [

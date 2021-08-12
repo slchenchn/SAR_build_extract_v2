@@ -1,14 +1,16 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-08
-Last Modified: 2021-08-10
+Last Modified: 2021-08-12
 	content: 
 '''
+from torch import nn
 from mmcv.cnn import DepthwiseSeparableConvModule
+
 from .conv_module_mixbn import ConvModuleMixBN
 
 
-class DepthwiseSeparableConvModuleMixBN(DepthwiseSeparableConvModule):
+class DepthwiseSeparableConvModuleMixBN(nn.Module):
     """Depthwise separable convolution module.
 
     See https://arxiv.org/pdf/1704.04861.pdf for details.
@@ -63,7 +65,7 @@ class DepthwiseSeparableConvModuleMixBN(DepthwiseSeparableConvModule):
                  pw_norm_cfg='default',
                  pw_act_cfg='default',
                  **kwargs):
-        super(DepthwiseSeparableConvModule, self).__init__()
+        super().__init__()
         assert 'groups' not in kwargs, 'groups should not be specified'
 
         # if norm/activation config of depthwise/pointwise ConvModule is not

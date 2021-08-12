@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-07-12
-Last Modified: 2021-08-11
+Last Modified: 2021-08-12
 	content: 
 '''
 import torch
@@ -16,7 +16,7 @@ from .fcn_head import FCNHead
 
 @HEADS.register_module()
 class FCNHeadMixBN(BaseDecodeHeadMixBN):
-    """Fully Convolution Networks for Semantic Segmentation.
+    """Fully Convolution Networks for domain adaptatioin
 
     This head is implemented of `FCNNet <https://arxiv.org/abs/1411.4038>`_.
 
@@ -88,6 +88,7 @@ class FCNHeadMixBN(BaseDecodeHeadMixBN):
 
         output = self.convs(x, domain=domain)
         if self.concat_input:
-            output = self.conv_cat(torch.cat([x, output], dim=1), domain=domain)
+            output = self.conv_cat(torch.cat([x, output], dim=1),
+                                    domain=domain)
         output = self.cls_seg(output)
         return output

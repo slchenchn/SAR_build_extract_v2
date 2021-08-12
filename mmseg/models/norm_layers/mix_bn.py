@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-08
-Last Modified: 2021-08-11
+Last Modified: 2021-08-12
 	content: 
 '''
 
@@ -9,6 +9,8 @@ from mmcv.cnn import NORM_LAYERS
 import torch.nn.functional as F
 import torch
 from torch.nn.modules.batchnorm import _BatchNorm, BatchNorm2d
+from torch import Tensor
+from typing import Optional
 
 
 from ..segmentors import Semi
@@ -39,6 +41,8 @@ class MixBN(BatchNorm2d):
         self.running_mean_dst = torch.zeros(num_features).cuda()
         self.running_var_dst = torch.ones(num_features).cuda()
 
+        # self.running_mean_dst = torch.nn.regis
+
     # def cuda(self, device=None):
     #     super().cuda(device=device)    
     #     self.weight.cuda(device=device) 
@@ -48,7 +52,7 @@ class MixBN(BatchNorm2d):
     #     self.running_mean_dst.cuda(device=device) 
     #     self.running_var_dst.cuda(device=device) 
 
-    def forward(self, input, domain):
+    def forward(self, input:Optional[Tensor], domain):
         '''
         Args:
             domain (list): list indicates source domain and target domain, 0

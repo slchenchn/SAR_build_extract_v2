@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-04
-Last Modified: 2021-08-10
+Last Modified: 2021-08-12
 	content: dataset for domain adaptation
 '''
 
@@ -75,10 +75,13 @@ class DomainAdaptationDataset(CustomDataset):
             })
 
     def __len__(self):
-        ''' Important, becauset the dataloader need this to determine the data index '''
+        ''' 
+        NOTE: Important, becauset the dataloader need this to determine the data index '''
         return len(self.img_infos[self.domains[0]])
 
     def _check_dict_inputs(self, **kargs):
+        ''' Check input params, the params should be a dict that contains the infos of all the domains separately, if not, duplicate it into a dict
+        '''
         for key, value in kargs.items():
             if isinstance(value, str):
                 new_value = {d:value for d in self.domains}

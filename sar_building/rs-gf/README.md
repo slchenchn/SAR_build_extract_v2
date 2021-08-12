@@ -1,1 +1,1 @@
-domain adaption for RS2 data to GF3 data
+domain adaptation for RS2 data to GF3 data

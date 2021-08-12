@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-07-11
-Last Modified: 2021-07-12
+Last Modified: 2021-08-11
 	content: 
 '''
 
@@ -12,7 +12,7 @@ img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 train_pipeline = [
     dict(type='LoadImageFromFile'),
-    dict(type='FourierDomainAdaption', dst_img_dir=dst_img_dir, LB=0.01),
+    dict(type='FourierDomainAdaptation', dst_img_dir=dst_img_dir, LB=0.01),
     dict(type='LoadAnnotations', reduce_zero_label=False),
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='PhotoMetricDistortion'),

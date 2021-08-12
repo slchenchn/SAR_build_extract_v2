@@ -1,8 +1,9 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-08
-Last Modified: 2021-08-10
+Last Modified: 2021-08-12
 	content: 
+    TODO: create seperate_train
 '''
 
 from mmcv.utils import print_log
@@ -13,13 +14,12 @@ from .dataset_wrappers import ConcatDataset
 
 @DATASETS.register_module()
 class MyConcatDataset(ConcatDataset):
-    """A wrapper of concatenated dataset.
-
-    Same as :obj:`torch.utils.data.dataset.ConcatDataset`, but
-    concat the group flag for image aspect ratio.
+    """concatenated dataset adapted from ConcatDataset of MMDetection
 
     Args:
         datasets (list[:obj:`Dataset`]): A list of datasets.
+        separate_eval (bool): whether to calculate the metrics separately. 
+            Default: True
     """
 
     def __init__(self, datasets, separate_eval=True, ):

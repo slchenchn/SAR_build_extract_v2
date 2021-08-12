@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-08
-Last Modified: 2021-08-10
+Last Modified: 2021-08-12
 	content: 
 '''
 import torch
@@ -13,10 +13,13 @@ from ..builder import HEADS
 from .decode_head_mixbn import BaseDecodeHeadMixBN
 
 from.aspp_head import ASPPHead, ASPPModule
+from ..segmentors import Semi
 
 
 class ASPPModuleMixBN(nn.ModuleList):
-    """Atrous Spatial Pyramid Pooling (ASPP) Module for mix BatchNorm
+    """Atrous Spatial Pyramid Pooling (ASPP) Module for domain adaptation
+
+    NOTE: compared with the original ASPPModule, this version need to chagne to __init__ method, so directly inherit the ASPPModule class is inconvenient, so we choose ModuleList as parant class
     """
 
     def __init__(self, dilations, in_channels, channels, conv_cfg, norm_cfg,
@@ -51,7 +54,7 @@ class ASPPModuleMixBN(nn.ModuleList):
 
 @HEADS.register_module()
 class ASPPHeadMixBN(BaseDecodeHeadMixBN):
-    """Rethinking Atrous Convolution for Semantic Image Segmentation.
+    """Rethinking Atrous Convolution for domain adaptation
 
     This head is the implementation of `DeepLabV3
     <https://arxiv.org/abs/1706.05587>`_.
@@ -90,9 +93,11 @@ class ASPPHeadMixBN(BaseDecodeHeadMixBN):
             norm_cfg=self.norm_cfg,
             act_cfg=self.act_cfg)
 
-    def forward(self, inputs, domain):
-        """Forward function."""
+    def forward(self, inputs, domain=None):
         x = self._transform_inputs(inputs)
+
+        domain = Semi.check_domain(data=x, domain=domain)
+
         aspp_outs = [
             resize(
                 self.image_pool(x, domain=domain),

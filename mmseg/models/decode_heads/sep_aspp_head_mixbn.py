@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-08
-Last Modified: 2021-08-10
+Last Modified: 2021-08-12
 	content: 
 '''
 import torch
@@ -16,7 +16,8 @@ from .aspp_head_mixbn import ASPPHeadMixBN, ASPPModuleMixBN
 
 class DepthwiseSeparableASPPModuleMixBN(ASPPModuleMixBN):
     """Atrous Spatial Pyramid Pooling (ASPP) Module with depthwise separable
-    conv."""
+    conv for domain adaptation
+    """
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -34,8 +35,7 @@ class DepthwiseSeparableASPPModuleMixBN(ASPPModuleMixBN):
 
 @HEADS.register_module()
 class DepthwiseSeparableASPPHeadMixBN(ASPPHeadMixBN):
-    """Encoder-Decoder with Atrous Separable Convolution for Semantic Image
-    Segmentation.
+    """Encoder-Decoder with Atrous Separable Convolution for domain adaptation
 
     This head is the implementation of `DeepLabV3+
     <https://arxiv.org/abs/1802.02611>`_.

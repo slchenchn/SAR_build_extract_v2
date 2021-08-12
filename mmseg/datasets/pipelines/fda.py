@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-07-10
-Last Modified: 2021-07-12
+Last Modified: 2021-08-11
 	content: adapted from https://github.com/NoelShin/PixelPick/blob/master/utils/utils.py
 '''
 import os.path as osp
@@ -16,8 +16,8 @@ from mylib import image_utils as iu
 from ..builder import PIPELINES
 
 @PIPELINES.register_module()
-class FourierDomainAdaption(object):
-    ''' Fourier domain adaption, adapted from paper "FDA: Fourier Domain Adaptation for Semantic Segmentation"
+class FourierDomainAdaptation(object):
+    ''' Fourier domain adaptation, adapted from paper "FDA: Fourier Domain Adaptation for Semantic Segmentation"
     
     Args:
         LB (float): size of the low frequency window to be replaced, must 
