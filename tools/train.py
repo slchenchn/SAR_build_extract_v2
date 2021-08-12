@@ -108,8 +108,8 @@ def main():
 
     # create work_dir
     timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
-    cfg.work_dir = osp.join(cfg.work_dir, timestamp, 
-                            str(cfg.model.backbone.norm_cfg.ratio))
+    ratio = str(cfg.model.backbone.norm_cfg.get('ratio', None))
+    cfg.work_dir = osp.join(cfg.work_dir, f'{timestamp}_{ratio}')
     mmcv.mkdir_or_exist(osp.abspath(cfg.work_dir))
     # dump config
     cfg.dump(osp.join(cfg.work_dir, osp.basename(args.config)))
