@@ -45,10 +45,10 @@ model = dict(
         norm_cfg=dict(type='SyncBN', requires_grad=True),
         align_corners=False,
         loss_decode=dict(
-            type='CrossEntropyLoss', use_sigmoid=False, loss_weight=0.4))
+            type='CrossEntropyLoss', use_sigmoid=False, loss_weight=0.4)),
+    train_cfg = dict(),
+    test_cfg = dict(mode='whole'),
     )
-train_cfg = dict()
-test_cfg = dict(mode='whole')
 dataset_type = 'Sar_building'
 data_root = 'data/ade20k/sar_building_rs2'
 img_norm_cfg = dict(
@@ -154,7 +154,10 @@ data = dict(
                 ])
         ]))
 log_config = dict(
-    interval=50, hooks=[dict(type='TextLoggerHook', by_epoch=False)])
+    interval=50, hooks=[
+        dict(type='TextLoggerHook', by_epoch=False),
+        dict(type='TensorboardLoggerHook'),
+        ])
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 load_from = None
@@ -164,6 +167,6 @@ cudnn_benchmark = True
 optimizer = dict(type='SGD', lr=0.005, momentum=0.9, weight_decay=0.005)
 optimizer_config = dict()
 lr_config = dict(policy='poly', power=0.9, min_lr=0.001, by_epoch=False)
-total_iters = 800
+runner = dict(type='IterBasedRunner', max_iters=1600)
 checkpoint_config = dict(by_epoch=False, interval=300000)
 evaluation = dict(interval=100, metric='mIoU')

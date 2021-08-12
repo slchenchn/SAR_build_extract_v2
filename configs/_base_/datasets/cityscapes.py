@@ -1,3 +1,9 @@
+'''
+Author: Shuailin Chen
+Created Date: 2021-08-05
+Last Modified: 2021-08-12
+	content: 
+'''
 # dataset settings
 dataset_type = 'CityscapesDataset'
 data_root = 'data/cityscapes/'
@@ -32,8 +38,8 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=2,
-    workers_per_gpu=2,
+    samples_per_gpu=4,
+    workers_per_gpu=4,
     train=dict(
         type=dataset_type,
         data_root=data_root,
