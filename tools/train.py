@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-08
-Last Modified: 2021-08-11
+Last Modified: 2021-08-12
 	content: 
 '''
 
@@ -108,7 +108,8 @@ def main():
 
     # create work_dir
     timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
-    cfg.work_dir = osp.join(cfg.work_dir, timestamp)
+    cfg.work_dir = osp.join(cfg.work_dir, timestamp, 
+                            str(cfg.model.backbone.norm_cfg.ratio))
     mmcv.mkdir_or_exist(osp.abspath(cfg.work_dir))
     # dump config
     cfg.dump(osp.join(cfg.work_dir, osp.basename(args.config)))

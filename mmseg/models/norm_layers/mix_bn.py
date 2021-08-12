@@ -41,17 +41,6 @@ class MixBN(BatchNorm2d):
         self.running_mean_dst = torch.zeros(num_features).cuda()
         self.running_var_dst = torch.ones(num_features).cuda()
 
-        # self.running_mean_dst = torch.nn.regis
-
-    # def cuda(self, device=None):
-    #     super().cuda(device=device)    
-    #     self.weight.cuda(device=device) 
-    #     self.bias.cuda(device=device) 
-    #     self.running_mean.cuda(device=device) 
-    #     self.running_var.cuda(device=device) 
-    #     self.running_mean_dst.cuda(device=device) 
-    #     self.running_var_dst.cuda(device=device) 
-
     def forward(self, input:Optional[Tensor], domain):
         '''
         Args:
@@ -94,7 +83,6 @@ class MixBN(BatchNorm2d):
             # output[src_idx, ...] = src_ouput
             
             return output
-
 
 
 def mix_bn(X, weight, bias, running_mean, running_var, eps, momentum, ratio,

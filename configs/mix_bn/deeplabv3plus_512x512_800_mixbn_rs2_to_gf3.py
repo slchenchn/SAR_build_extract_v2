@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-07-11
-Last Modified: 2021-08-11
+Last Modified: 2021-08-12
 	content: 
 '''
 
@@ -41,5 +41,5 @@ optimizer = dict(type='SGD', lr=0.005, momentum=0.9, weight_decay=0.005)
 optimizer_config = dict()
 runner = dict(type='IterBasedRunner', max_iters=1600)
 lr_config = dict(policy='poly', power=0.9, min_lr=0.001, by_epoch=False)
-checkpoint_config = dict(by_epoch=False, interval=400)
+checkpoint_config = dict(by_epoch=False, interval=300000)
 evaluation = dict(interval=100, metric='mIoU')
