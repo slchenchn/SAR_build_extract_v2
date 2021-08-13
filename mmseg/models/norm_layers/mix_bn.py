@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-08
-Last Modified: 2021-08-12
+Last Modified: 2021-08-13
 	content: 
 '''
 
@@ -49,16 +49,9 @@ class MixBN(BatchNorm2d):
         '''
 
         if not torch.is_grad_enabled():
-            # src_ouput, self.running_mean, self.running_var, _, _ = mix_bn(input, self.weight, self.bias, self.running_mean, self.running_var, self.eps, self.momentum, self.ratio, 0, 0)
-            # return src_ouput
             return super().forward(input)
         else:
             src_input, dst_input = Semi.split_domins_data(input, domain=domain)
-
-            # dst_idx = np.argwhere(domain).flatten()
-            # src_idx = np.argwhere(np.logical_not(domain)).flatten()
-            # dst_input = input[dst_idx, ...]
-            # src_input = input[src_idx, ...]
             
             # dst params
             dst_output, _, _, mean_dst, var_dst = mix_bn(
@@ -90,8 +83,6 @@ def mix_bn(X, weight, bias, running_mean, running_var, eps, momentum, ratio,
     ''' BatchNorm implementation from dive into deep learning
     '''
 
-    # Use `is_grad_enabled` to determine whether the current mode is training
-    # mode or prediction mode
     if not torch.is_grad_enabled():
         # deprecated !!!
         weight = weight.reshape(1, weight.shape[0], 1, 1)
