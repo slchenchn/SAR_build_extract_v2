@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-07-11
-Last Modified: 2021-08-10
+Last Modified: 2021-08-13
 	content: 
 '''
 
@@ -71,8 +71,8 @@ data_test_dst = dict(
 )
 
 data = dict(
-    samples_per_gpu=2,
-    workers_per_gpu=2,
+    samples_per_gpu=3,
+    workers_per_gpu=3,
     # samples_per_gpu=2,
     # workers_per_gpu=4,
     train=dict(
