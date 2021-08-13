@@ -5,6 +5,7 @@ Last Modified: 2021-08-12
 	content: 
 '''
 norm_cfg = dict(type='BN', requires_grad=True)
+# norm_cfg = dict(type='BN', requires_grad=True)
 model = dict(
     type='EncoderDecoder',
     pretrained='open-mmlab://resnet50_v1c',
@@ -15,7 +16,7 @@ model = dict(
         out_indices=(0, 1, 2, 3),
         dilations=(1, 1, 2, 4),
         strides=(1, 2, 1, 1),
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        norm_cfg=norm_cfg,
         norm_eval=False,
         style='pytorch',
         contract_dilation=True),
@@ -29,7 +30,7 @@ model = dict(
         c1_channels=48,
         dropout_ratio=0.1,
         num_classes=3,
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        norm_cfg=norm_cfg,
         align_corners=False,
         loss_decode=dict(
             type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0)),
@@ -42,7 +43,7 @@ model = dict(
         concat_input=False,
         dropout_ratio=0.1,
         num_classes=3,
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        norm_cfg=norm_cfg,
         align_corners=False,
         loss_decode=dict(
             type='CrossEntropyLoss', use_sigmoid=False, loss_weight=0.4)),

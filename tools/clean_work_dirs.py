@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-08
-Last Modified: 2021-08-10
+Last Modified: 2021-08-12
 	content: clear unnecessary work_dirs
 '''
 
@@ -10,7 +10,7 @@ import os.path as osp
 from pathlib import Path
 from glob import glob
 import shutil
-
+import argparse
 
 def clean_no_run_dirs(path, bytes_threshold=600):
     ''' Clean work dirs for debug, where the model not actually run for a single iteration    
@@ -35,5 +35,9 @@ def clean_no_run_dirs(path, bytes_threshold=600):
 
 
 if __name__ == '__main__':
-    path  = r'work_dirs/deeplabv3plus_512x512_800_mixbn_rs2_to_gf3'
-    clean_no_run_dirs(path)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('path', type=str, 
+            default=r'work_dirs/deeplabv3plus_512x512_800_mixbn_rs2_to_gf3')
+    args = parser.parse_args()
+
+    clean_no_run_dirs(args.path)
