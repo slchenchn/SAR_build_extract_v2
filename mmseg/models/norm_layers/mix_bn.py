@@ -26,7 +26,8 @@ class MixBN(BatchNorm2d):
         detach (bool): if to detach BN with respect to target domain. Default: 
             True
         model (int): mix mode. 0: target domain's mean and var as source'
-            domain's mean and var. Default: 0
+            domain's mean and var; 1: target domain's mean and var as source'
+            domain's bias and weight, while in test mode, remove this BN layer.Default: 0
     '''
 
     def __init__(self, num_features, ratio=0.5, detach=True, mode=0,
@@ -51,7 +52,12 @@ class MixBN(BatchNorm2d):
         '''
 
         if not torch.is_grad_enabled():
-            return super().forward(input)
+            if self.mode == 0:
+                return super().forward(input)
+            elif self.mode == 1:
+                return input
+            else:
+                raise NotImplementedError
         else:
             src_input, dst_input = Semi.split_domins_data(input, domain=domain)
             
@@ -65,9 +71,18 @@ class MixBN(BatchNorm2d):
                 var_dst = var_dst.detach()
 
             # src params
-            if self.mode==0:
+            if self.mode == 0:
                 ''' replace source mean and var with targe mean and var'''
                 src_ouput, self.running_mean, self.running_var, _, _ = mix_bn(src_input, self.weight, self.bias, self.running_mean, self.running_var, self.eps, self.momentum, self.ratio, mean_dst, var_dst)
+            elif self.mode == 1:
+                ''' replace source mean and var with targe bias and weight'''
+                mean_src = src_input.mean(dim=(0, 2, 3), keepdim=True)
+                var_src = ((src_input - mean_src)**2).mean(dim=(0, 2, 3), keepdim=True)
+                bias = self.ratio * mean_src + (1-self.ratio)* mean_dst
+                weight = self.ratio * var_src + (1-self.ratio) * var_dst
+                bias = bias.squeeze()
+                weight = bias.squeeze()
+                src_ouput = F.batch_norm(src_input, self.running_mean, self.running_var, weight, bias, True, self.momentum, self.eps)
             else:
                 raise NotImplementedError
             
