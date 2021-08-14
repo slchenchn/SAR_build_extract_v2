@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-08
-Last Modified: 2021-08-13
+Last Modified: 2021-08-14
 	content: 
 '''
 
@@ -11,6 +11,7 @@ import torch
 from torch.nn.modules.batchnorm import _BatchNorm, BatchNorm2d
 from torch import Tensor
 from typing import Optional
+from mmcv.utils import print_log
 
 
 from ..segmentors import Semi
@@ -36,6 +37,7 @@ class MixBN(BatchNorm2d):
         self.ratio = ratio
         self.detach = detach
         self.mode = mode
+        print_log(f'Mix BN: ratio= {ratio}, detach= {detach}')
 
         # shape = (1, num_features, 1, 1)
         self.running_mean_dst = torch.zeros(num_features).cuda()
