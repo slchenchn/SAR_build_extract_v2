@@ -5,6 +5,7 @@ cd /home/csl/code/SAR_build_extract_v2
 
 # floating point arithmetic operations are not support by vanilla bash
 # for rt in {0..10..2}
+# for rt in 0
 for rt in 0 0.25 0.5 0.75 1
 do 
 # echo $((rt/10.))

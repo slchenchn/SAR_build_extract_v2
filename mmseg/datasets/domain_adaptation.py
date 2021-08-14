@@ -1,12 +1,13 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-04
-Last Modified: 2021-08-12
+Last Modified: 2021-08-13
 	content: dataset for domain adaptation
 '''
-
+import numpy as np
 import os.path as osp
 import mmcv.parallel.collate
+
 from .builder import DATASETS
 from .custom import CustomDataset
 from .pipelines import Compose
@@ -124,6 +125,9 @@ class DomainAdaptationDataset(CustomDataset):
         results = dict(domains=self.domains)
         for domain in self.domains:
             # NOTE: use same index for source and target domain, don't know whether matters or not
+            if domain != 'src':
+                idx = np.random.randint(0, len(self.img_infos[domain]))
+                
             img_info = self.img_infos[domain][idx]
             ann_info = self.get_ann_info(idx, domain=domain)
             results[domain] = dict(img_info=img_info, ann_info=ann_info,
