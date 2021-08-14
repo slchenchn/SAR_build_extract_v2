@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-08
-Last Modified: 2021-08-12
+Last Modified: 2021-08-14
 	content: clear unnecessary work_dirs
 '''
 
@@ -38,6 +38,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('path', type=str, 
             default=r'work_dirs/deeplabv3plus_512x512_800_mixbn_rs2_to_gf3')
+    parser.add_argument('--threshold', type=int, 
+            default=600)
+    
     args = parser.parse_args()
 
-    clean_no_run_dirs(args.path)
+    clean_no_run_dirs(args.path, args.threshold)
