@@ -37,7 +37,7 @@ class MixBN(BatchNorm2d):
         self.ratio = ratio
         self.detach = detach
         self.mode = mode
-        print_log(f'Mix BN: ratio= {ratio}, detach= {detach}')
+        print_log(f'Mix BN: ratio= {ratio}, detach= {detach}', logger='mmseg')
 
         # shape = (1, num_features, 1, 1)
         self.running_mean_dst = torch.zeros(num_features).cuda()
