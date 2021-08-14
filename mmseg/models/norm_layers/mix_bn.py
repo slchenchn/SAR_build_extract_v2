@@ -56,6 +56,8 @@ class MixBN(BatchNorm2d):
                 return super().forward(input)
             elif self.mode == 1:
                 return input
+            elif self.mode == 2:
+                return super().forward(input)
             else:
                 raise NotImplementedError
         else:
@@ -75,13 +77,18 @@ class MixBN(BatchNorm2d):
                 ''' replace source mean and var with targe mean and var'''
                 src_ouput, self.running_mean, self.running_var, _, _ = mix_bn(src_input, self.weight, self.bias, self.running_mean, self.running_var, self.eps, self.momentum, self.ratio, mean_dst, var_dst)
             elif self.mode == 1:
-                ''' replace source mean and var with targe bias and weight'''
+                ''' replace source mean and var with targe bias and weight, without leanable weight and bias'''
                 mean_src = src_input.mean(dim=(0, 2, 3), keepdim=True)
                 var_src = ((src_input - mean_src)**2).mean(dim=(0, 2, 3), keepdim=True)
                 bias = self.ratio * mean_src + (1-self.ratio)* mean_dst
                 weight = self.ratio * var_src + (1-self.ratio) * var_dst
                 bias = bias.squeeze()
                 weight = bias.squeeze()
+                src_ouput = F.batch_norm(src_input, self.running_mean, self.running_var, weight, bias, True, self.momentum, self.eps)
+            elif self.mode == 2:
+                ''' replace source mean and var with targe bias and weight, with leanable weight and bias '''
+                bias = self.ratio * self.bias + (1-self.ratio)* mean_dst.squeeze()
+                weight = self.ratio * self.weight + (1-self.ratio) * var_dst.squeeze()
                 src_ouput = F.batch_norm(src_input, self.running_mean, self.running_var, weight, bias, True, self.momentum, self.eps)
             else:
                 raise NotImplementedError
