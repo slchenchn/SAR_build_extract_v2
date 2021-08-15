@@ -13,9 +13,9 @@ cd /home/csl/code/SAR_build_extract_v2
 # done
 
 # only backbone
-for rt in 0 0.25 0.5 0.75 
+for rt in 0.25 0.5 0.75 
 do 
 # echo $((rt/10.))
-python tools/train.py configs/mix_bn/deeplabv3plus_512x512_4k_mixbn_rs2_to_gf3_0_detach_backbone.py --options model.backbone.norm_cfg.ratio=$rt
+python tools/train.py configs/mix_bn/deeplabv3plus_512x512_4k_mixbn_rs2_to_gf3_2_detach_backbone.py --options model.backbone.norm_cfg.ratio=$rt
 done
 
