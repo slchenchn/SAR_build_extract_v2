@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-04
-Last Modified: 2021-08-13
+Last Modified: 2021-08-15
 	content: dataset for domain adaptation
 '''
 import numpy as np
@@ -124,7 +124,7 @@ class DomainAdaptationDataset(CustomDataset):
 
         results = dict(domains=self.domains)
         for domain in self.domains:
-            # NOTE: use same index for source and target domain, don't know whether matters or not
+            # NOTE: use same index for source and target domain, don't know whether matters or not, need to be modified when used as another application
             if domain != 'src':
                 idx = np.random.randint(0, len(self.img_infos[domain]))
                 

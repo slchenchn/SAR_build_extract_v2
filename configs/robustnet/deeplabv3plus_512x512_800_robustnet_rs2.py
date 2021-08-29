@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-07-11
-Last Modified: 2021-07-16
+Last Modified: 2021-08-28
 	content: 
 '''
 
@@ -11,7 +11,7 @@ _base_ = [
 ]
 
 
-# change num_classess
+# change num_classes
 # norm_cfg = dict(type='BN', requires_grad=True)
 norm_cfg = dict(type='SyncBN', requires_grad=True)
 model = dict(

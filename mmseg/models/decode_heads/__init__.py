@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-07-12
-Last Modified: 2021-07-14
+Last Modified: 2021-08-28
 	content: 
 '''
 from .ann_head import ANNHead
@@ -33,6 +33,7 @@ from .sep_aspp_head_mixbn import ASPPHeadMixBN
 from .fcn_head_mixbn import FCNHeadMixBN
 from .new_fcn_head import NewFCNHead
 from .decode_head_mixbn import BaseDecodeHeadMixBN
+from .sep_2_aspp_head import Depthwise2SeparableASPPHead
 
 # __all__ = [
 #     'FCNHead', 'PSPHead', 'ASPPHead', 'PSAHead', 'NLHead', 'GCHead', 'CCHead',
