@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-08
-Last Modified: 2021-08-12
+Last Modified: 2021-08-29
 	content: 
 '''
 
@@ -150,21 +150,31 @@ def main():
 
     logger.info(model)
 
-    datasets = [build_dataset(cfg.data.train)]
+    if cfg.data.train.get('type', None):
+        ''' single dataset'''
+        datasets = [build_dataset(cfg.data.train)]
+        classes = datasets[0].CLASSES.CLASSES
+        palette = datasets[0].CLASSES.PALETTE
+    elif cfg.data.train.get('labeled', None):
+        ''' semi-supervise dataset '''
+        datasets=[{k: build_dataset(v) for k, v in cfg.data.train.items()}]
+        classes = list(datasets[0].values())[0].CLASSES
+        palette = list(datasets[0].values())[0].PALETTE
     if len(cfg.workflow) == 2:
         val_dataset = copy.deepcopy(cfg.data.val)
         val_dataset.pipeline = cfg.data.train.pipeline
         datasets.append(build_dataset(val_dataset))
+
     if cfg.checkpoint_config is not None:
         # save mmseg version, config file content and class names in
         # checkpoints as meta data
         cfg.checkpoint_config.meta = dict(
             mmseg_version=f'{__version__}+{get_git_hash()[:7]}',
             config=cfg.pretty_text,
-            CLASSES=datasets[0].CLASSES,
-            PALETTE=datasets[0].PALETTE)
+            CLASSES=classes,
+            PALETTE=palette)
     # add an attribute for visualization convenience
-    model.CLASSES = datasets[0].CLASSES
+    model.CLASSES = classes
     # passing checkpoint meta for saving best checkpoint
     meta.update(cfg.checkpoint_config.meta)
     train_segmentor(

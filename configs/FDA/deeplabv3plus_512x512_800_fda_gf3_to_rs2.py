@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-07-11
-Last Modified: 2021-07-13
+Last Modified: 2021-08-28
 	content: 
 '''
 
@@ -10,7 +10,7 @@ _base_ = [
     '../_base_/default_runtime.py', '../_base_/schedules/schedule_20k.py'
 ]
 
-# change num_classess
+# change num_classes
 model = dict(
     decode_head=dict(
         num_classes=2,
