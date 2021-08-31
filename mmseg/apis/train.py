@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-08
-Last Modified: 2021-08-10
+Last Modified: 2021-08-29
 	content: 
 '''
 import random
@@ -15,6 +15,7 @@ from mmcv.runner import build_optimizer, build_runner
 from mmseg.core import DistEvalHook, EvalHook
 from mmseg.datasets import build_dataloader, build_dataset
 from mmseg.utils import get_root_logger
+import mmseg.runner
 
 
 def set_random_seed(seed, deterministic=False):
@@ -46,20 +47,26 @@ def train_segmentor(model,
     """Launch segmentor training."""
     logger = get_root_logger(cfg.log_level)
 
-    # prepare data loaders
+    # prepare data loaders, adapted from semi supervised
     dataset = dataset if isinstance(dataset, (list, tuple)) else [dataset]
-    data_loaders = [
-        build_dataloader(
-            ds,
-            cfg.data.samples_per_gpu,
-            cfg.data.workers_per_gpu,
-            # cfg.gpus will be ignored if distributed
-            len(cfg.gpu_ids),
-            dist=distributed,
-            seed=cfg.seed,
-            # persistent_workers=False,
-            drop_last=True) for ds in dataset
-    ]
+    data_loaders = []
+    for ds in dataset:
+        if isinstance(ds, dict):
+            data_loaders.append({k: build_dataloader(v, 
+                                cfg.data.samples_per_gpu, 
+                                cfg.data.workers_per_gpu,
+                                len(cfg.gpu_ids),
+                                dist=distributed,
+                                seed=cfg.seed,
+                                drop_last=True) for k, v in ds.items()})
+        else:
+            data_loaders.append(build_dataloader(ds, 
+                                cfg.data.samples_per_gpu, 
+                                cfg.data.workers_per_gpu,
+                                len(cfg.gpu_ids),
+                                dist=distributed,
+                                seed=cfg.seed,
+                                drop_last=True))
 
     # loader = data_loaders[0]
     # print(len(loader))
@@ -117,7 +124,7 @@ def train_segmentor(model,
             dist=distributed,
             shuffle=False)
         eval_cfg = cfg.get('evaluation', {})
-        eval_cfg['by_epoch'] = cfg.runner['type'] != 'IterBasedRunner'
+        eval_cfg['by_epoch'] = not ('IterBasedRunner' in cfg.runner['type'] )
         eval_hook = DistEvalHook if distributed else EvalHook
         runner.register_hook(eval_hook(val_dataloader, **eval_cfg))
 

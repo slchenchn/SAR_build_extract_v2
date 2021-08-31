@@ -60,10 +60,10 @@ class ReCo(SemiV2):
         x = self.backbone_ema(img)
         if self.with_neck:
             x = self.neck_ema(x)
-        preds, _ = self.decode_head_ema.forward(img)
+        preds, _ = self.decode_head_ema.forward(x)
         return preds
 
-    def main_forward(self, img):
+    def main_forward(self, img, img_metas=None, gt_semantic_seg=None):
         ''' Forward function of the main model 
         
         Returns:
@@ -73,8 +73,22 @@ class ReCo(SemiV2):
         x = self.backbone(img)
         if self.with_neck:
             x = self.neck(x)
-        preds, reps = self.decode_head.forward(img)
-        return preds, reps
+        preds, reps = self.decode_head.forward(x)
+
+        # calculate loss if GT is given
+        loss = dict()
+        if (img_metas is not None) and (gt_semantic_seg is not None):
+            decode_losses = self.decode_head.losses(preds, gt_semantic_seg)
+            decode_losses = add_prefix(decode_losses, 'decode')
+            
+            if self.with_auxiliary_head:
+                aux_loss = self._auxiliary_head_forward_train(
+                    x, img_metas, gt_semantic_seg)
+
+            loss.update(decode_losses)
+            loss.update(aux_loss)
+
+        return preds, reps, loss
 
     def compute_unsupervised_loss(self, predict, target, logits):
         ''' Adapted from original ReCo 
@@ -86,17 +100,13 @@ class ReCo(SemiV2):
                 size=target.shape[1:],
                 mode='bilinear',
                 align_corners=self.align_corners)
-        logits = resize(
-                input=logits,
-                size=target.shape[1:],
-                mode='bilinear',
-                align_corners=self.align_corners)
 
         # 选取confidence大于预设值的做交叉熵
         batch_size = predict.shape[0]
         # TODO: 这里为什么要用float呢
         valid_mask = (target >= 0).float()   # only count valid pixels
 
+        # 对每个样本进行加权
         weighting = logits.view(batch_size, -1).ge(self.strong_thres).sum(-1) / valid_mask.view(batch_size, -1).sum(-1)
         loss = F.cross_entropy(predict, target, reduction='none', ignore_index=-1)
         # TODO: 这个交叉熵怎么也不会小于等于零啊，为什么要选择呢，搞不懂
@@ -105,32 +115,33 @@ class ReCo(SemiV2):
 
     def label_onehot(self, inputs):
         ''' Convert label to one-hot vector '''
-        batch_size, im_h, im_w = inputs.shape
+        batch_size, _, im_h, im_w = inputs.shape
         num_classes = self.decode_head.num_classes
         # remap invalid pixels (-1) into 0, otherwise we cannot create one-hot vector with negative labels.
         # we will still mask out those invalid values in valid mask
         inputs = torch.relu(inputs)
         outputs = torch.zeros([batch_size, num_classes, im_h, im_w]).to(inputs.device)
-        return outputs.scatter_(1, inputs.unsqueeze(1), 1.0)
+        return outputs.scatter_(1, inputs, 1.0)
 
     def forward_train(self, labeled: dict, unlabeled: dict, **kargs):
-        
+        # TODO: generate pseudo label via weak augments, and costrain consistency with strong augments
         # generate pseudo labels for unlabeled data
         with torch.no_grad():
             ema_pred = self.ema_forward(unlabeled['img'])
+            ema_pred = resize(input=ema_pred,
+                                    size=unlabeled['img'].shape[2:],
+                                    mode='bilinear',
+                                    align_corners=self.align_corners)
             # TODO: interpolate may not be need
             # ema_pred = F.interpolate(ema_pred, size=labeled['gt_semantic_seg'].sahpe[1:], mode='bilinear', align_corners=self.align_corners)
             pseudo_logits, pseudo_labels = torch.max(ema_pred, dim=1)
 
-        loss = dict()
-        preds_l, reps_l = self.main_forward(labeled['img'])
-        preds_u, reps_u = self.main_forward(unlabeled['img'])
+        # supervised loss
+        preds_l, reps_l, sup_loss = self.main_forward(labeled['img'], labeled['img_metas'], labeled['gt_semantic_seg'])
+        preds_u, reps_u, _ = self.main_forward(unlabeled['img'])
 
         rep_all = torch.cat((reps_l, reps_u))
         pred_all = torch.cat((preds_l, preds_u))
-
-        # supervised loss
-        sup_loss = self.decode_head.losses(preds_l, labeled['gt_semantic_seg'])
 
         # pseudo label loss
         unsup_loss = self.compute_unsupervised_loss(preds_u, pseudo_labels, pseudo_logits)
@@ -139,13 +150,15 @@ class ReCo(SemiV2):
         with torch.no_grad():
             # mask
             pseudo_mask = pseudo_logits.ge(self.weak_thres)
-            mask_all = torch.cat(labeled['gt_semantic_seg'].unsqueeze(1),
-                                pseudo_mask.unsqueeze(1))
+            mask_all = torch.cat((labeled['gt_semantic_seg']>=0,
+                                pseudo_mask.unsqueeze(1)))
+            mask_all = resize(mask_all.float(), size=pred_all.shape[2:])
 
             # label
             one_hot_label = self.label_onehot(labeled['gt_semantic_seg'])
-            one_hot_pseudo_label = self.label_onehot(pseudo_labels)
-            label_all = torch.cat(one_hot_label, one_hot_pseudo_label)
+            one_hot_pseudo_label = self.label_onehot(pseudo_labels.unsqueeze(1))
+            label_all = torch.cat((one_hot_label, one_hot_pseudo_label))
+            label_all = resize(label_all.float(), size=pred_all.shape[2:])
 
             # predicted probability
             prob_l = torch.softmax(preds_l, dim=1)
@@ -153,13 +166,10 @@ class ReCo(SemiV2):
             prob_all = torch.cat((prob_l, prob_u))
 
         reco_loss = self.compute_reco_loss(rep_all, label_all, mask_all, prob_all)
-        loss.update({'sup loss': sup_loss, 'unsup loss': unsup_loss, 'reco loss': reco_loss})
 
-        # auxiliary head
-        if self.with_auxiliary_head:
-            loss_aux = self._auxiliary_head_forward_train(
-                labeled['img'], labeled['img_metas'], labeled['gt_semantic_seg'])
-            loss.update(loss_aux)
+        loss = dict()
+        loss.update(sup_loss)
+        loss.update({'unsup.loss': unsup_loss, 'reco.loss': reco_loss})
 
         return loss
 
@@ -174,7 +184,7 @@ class ReCo(SemiV2):
         # compute valid binary mask for each pixel
         valid_pixel = label * mask
 
-        # permute representation for indexing: batch x im_h x im_w x feature_channel
+        # permute representation for indexing: B x H x W x C
         rep = rep.permute(0, 2, 3, 1)
 
         # compute prototype (class mean representation) for each class across all valid pixels
@@ -194,8 +204,8 @@ class ReCo(SemiV2):
             # prototype
             seg_proto_list.append(torch.mean(rep[valid_pixel_seg.bool()], dim=0, keepdim=True))
             seg_feat_all_list.append(rep[valid_pixel_seg.bool()])
-            seg_feat_hard_list.append(rep[rep_mask_hard])   # 作为query
-            #query像素的数量
+            # 作为query像素的数量
+            seg_feat_hard_list.append(rep[rep_mask_hard])   
             seg_num_list.append(int(valid_pixel_seg.sum().item()))  
 
         # compute regional contrastive loss
@@ -246,6 +256,16 @@ class ReCo(SemiV2):
                 reco_loss = reco_loss + F.cross_entropy(seg_logits / self.tmperature, torch.zeros(self.num_queries).long().to(device))
             return reco_loss / valid_seg
 
+    def encode_decode(self, img, img_metas):
+        """ Overload the original func."""
+        x = self.extract_feat(img)
+        out, _ = self._decode_head_forward_test(x, img_metas)
+        out = resize(
+            input=out,
+            size=img.shape[2:],
+            mode='bilinear',
+            align_corners=self.align_corners)
+        return out
 
 def negative_index_sampler(samp_num, seg_num_list):
     negative_index = []

@@ -1,3 +1,9 @@
+'''
+Author: Shuailin Chen
+Created Date: 2021-08-12
+Last Modified: 2021-08-29
+	content: 
+'''
 import os
 import os.path as osp
 from collections import OrderedDict
@@ -165,7 +171,7 @@ class CustomDataset(Dataset):
             dict: Annotation info of specified index.
         """
 
-        return self.img_infos[idx]['ann']
+        return self.img_infos[idx].get('ann', None)
 
     def pre_pipeline(self, results):
         """Prepare results dict for pipeline."""

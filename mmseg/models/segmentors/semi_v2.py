@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-04
-Last Modified: 2021-08-28
+Last Modified: 2021-08-29
 	content: 
 '''
 
@@ -58,15 +58,17 @@ class SemiV2(EncoderDecoder):
         # TODO: need change the loss parsing progress
         loss, log_vars = self._parse_losses(losses)
 
+        # NOTE: just set the num_samples= labeled+unlabeled temporarily
+        num_samples = sum([len(v['img_metas']) for v in data_batch.values()])
         outputs = dict(
             loss=loss,
             log_vars=log_vars,
-            num_samples=len(data_batch['img_metas']))
+            num_samples=num_samples)
 
         return outputs
 
     @auto_fp16(apply_to=('img', ))
-    def forward(self, data_batch, return_loss=True, **kwargs):
+    def forward(self, data_batch={}, return_loss=True, **kwargs):
         """Calls either :func:`forward_train` or :func:`forward_test` depending
         on whether ``return_loss`` is ``True``.
 
@@ -76,18 +78,18 @@ class SemiV2(EncoderDecoder):
         should be double nested (i.e.  List[Tensor], List[List[dict]]), with
         the outer list indicating test time augmentations.
         """
-        
-        assert isinstance(data_batch, dict)
-        
-        if return_loss:
-            assert len(data_batch)==1
-        else:
-            assert len(data_batch)>1
 
         if return_loss:
+            assert len(data_batch) == 2, f'should have labeled unlabeled data batch'
             return self.forward_train(**data_batch, **kwargs)
         else:
-            return self.forward_test(*data_batch.values(), **kwargs)
+            ''' eval mode, the batch data are stored in kargs '''
+            assert len(data_batch)==0
+            new_data_batch = dict()
+            #这个key多了个's'没错
+            new_data_batch.update({'imgs': kwargs.pop('img')})
+            new_data_batch.update({'img_metas': kwargs.pop('img_metas')})
+            return self.forward_test(**new_data_batch, **kwargs)
 
     @abstractmethod
     def forward_train(self, labeled:dict, unlabeled:dict, **kargs):

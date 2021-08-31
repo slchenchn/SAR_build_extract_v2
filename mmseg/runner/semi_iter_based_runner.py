@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-28
-Last Modified: 2021-08-28
+Last Modified: 2021-08-29
 	content: iteration based runner for semi-supervision
 '''
 import time
@@ -22,7 +22,8 @@ class SemiIterBasedRunner(IterBasedRunner):
         self.model.train()
         self.mode = 'train'
         self.data_loader = data_loader
-        self._epoch = data_loader.epoch
+        self._epoch = list(data_loader.values())[0].epoch
+        # print(f'self._epoch: {self._epoch}')
         data_batch = {k: next(v) for k, v in data_loader.items()}
         self.call_hook('before_train_iter')
         outputs = self.model.train_step(data_batch, self.optimizer, **kwargs)
@@ -36,7 +37,7 @@ class SemiIterBasedRunner(IterBasedRunner):
         self._inner_iter += 1
         self._iter += 1
 
-    def run(self, data_loaders:dict, workflow:list, max_iters:int, **kwargs):
+    def run(self, data_loaders:dict, workflow:list, max_iters=None, **kwargs):
         """ Start running.
 
         Args:
@@ -69,11 +70,12 @@ class SemiIterBasedRunner(IterBasedRunner):
 
         # multiple dataloaders for training, change iter_loaders from `list` to `dict`
         iter_loaders = {}
-        for data_loader, work in zip(data_loaders, workflow):
+        for data_loader, (mode, _) in zip(data_loaders, workflow):
             if isinstance(data_loader, dict):
-                iter_loaders.update({work: {k: IterLoader(v)} for k, v in data_loader.items()})
+                # tmp = {mode: {k: v for k, v in data_loader.items()}}
+                iter_loaders.update({mode: {k: IterLoader(v) for k, v in data_loader.items()}})
             else:
-                iter_loaders.update({work: IterLoader(data_loader)})
+                iter_loaders.update({mode: IterLoader(data_loader)})
 
         self.call_hook('before_epoch')
 
@@ -86,6 +88,7 @@ class SemiIterBasedRunner(IterBasedRunner):
                         'runner has no method named "{}" to run a workflow'.
                         format(mode))
                 iter_runner = getattr(self, mode)
+                # print(f'iters: {iters}, iter_runner: {iter_runner}')
                 for _ in range(iters):
                     if mode == 'train' and self.iter >= self._max_iters:
                         break
