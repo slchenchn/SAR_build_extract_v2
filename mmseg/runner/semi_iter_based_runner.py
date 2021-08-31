@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-28
-Last Modified: 2021-08-29
+Last Modified: 2021-08-31
 	content: iteration based runner for semi-supervision
 '''
 import time
@@ -30,7 +30,6 @@ class SemiIterBasedRunner(IterBasedRunner):
         if not isinstance(outputs, dict):
             raise TypeError('model.train_step() must return a dict')
         if 'log_vars' in outputs:
-            # TODO: may need to change here
             self.log_buffer.update(outputs['log_vars'], outputs['num_samples'])
         self.outputs = outputs
         self.call_hook('after_train_iter')

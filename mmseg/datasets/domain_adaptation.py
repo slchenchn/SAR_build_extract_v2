@@ -1,8 +1,9 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-04
-Last Modified: 2021-08-15
-	content: dataset for domain adaptation
+Last Modified: 2021-08-31
+	content: dataset for domain adaptation, 1st version
+    # NOTE: deprecated
 '''
 import numpy as np
 import os.path as osp
@@ -124,7 +125,7 @@ class DomainAdaptationDataset(CustomDataset):
 
         results = dict(domains=self.domains)
         for domain in self.domains:
-            # NOTE: use same index for source and target domain, don't know whether matters or not, need to be modified when used as another application
+            # generate another random value to sample the image in dst domain
             if domain != 'src':
                 idx = np.random.randint(0, len(self.img_infos[domain]))
                 

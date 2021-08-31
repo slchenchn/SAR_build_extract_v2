@@ -1,9 +1,8 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-08
-Last Modified: 2021-08-12
+Last Modified: 2021-08-31
 	content: 
-    TODO: create seperate_train
 '''
 
 from mmcv.utils import print_log
@@ -14,7 +13,7 @@ from .dataset_wrappers import ConcatDataset
 
 @DATASETS.register_module()
 class MyConcatDataset(ConcatDataset):
-    """concatenated dataset adapted from ConcatDataset of MMDetection
+    """concatenated dataset adapted from ConcatDataset of MMDetection, only for separate validation
 
     Args:
         datasets (list[:obj:`Dataset`]): A list of datasets.

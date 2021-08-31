@@ -1,3 +1,11 @@
+'''
+Author: Shuailin Chen
+Created Date: 2021-08-12
+Last Modified: 2021-08-31
+	content: Report the inference time as the total time of network forwarding and post-processing, excluding the data loading time. this script computes the average time on 200 images with torch.backends.cudnn.benchmark=False.
+
+
+'''
 import argparse
 import time
 

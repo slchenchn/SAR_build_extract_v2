@@ -1,9 +1,8 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-08
-Last Modified: 2021-08-12
+Last Modified: 2021-08-31
 	content: ResNet for domain adaptation purpose
-    
     NOTE: these codes do not consider the plugin layers, so it may not suitable for models with plugin layers
 '''
 import warnings

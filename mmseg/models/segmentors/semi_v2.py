@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-04
-Last Modified: 2021-08-29
+Last Modified: 2021-08-31
 	content: 
 '''
 
@@ -55,10 +55,9 @@ class SemiV2(EncoderDecoder):
         # parse the data_batch in `forward` func
         losses = self(data_batch)
 
-        # TODO: need change the loss parsing progress
         loss, log_vars = self._parse_losses(losses)
 
-        # NOTE: just set the num_samples= labeled+unlabeled temporarily
+        # NOTE: just set the num_samples= labeled+unlabeled temporarily, when batchsize is consistent across training, it won't cause problem, but actually it doesnt' look descent, and may be changed in the future
         num_samples = sum([len(v['img_metas']) for v in data_batch.values()])
         outputs = dict(
             loss=loss,

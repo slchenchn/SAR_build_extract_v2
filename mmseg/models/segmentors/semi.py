@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-04
-Last Modified: 2021-08-12
+Last Modified: 2021-08-31
 	content: 
 '''
 
@@ -30,7 +30,7 @@ class Semi(EncoderDecoder):
     def get_domains_slice(domain):
         ''' Get domains' slice, as the input, the domain indicates which domian every sample belongs to, like [0, 1, 0, 1], this func convert it into separate domain index, like src_idx=[0, 2], dst_idx=[1, 3], for the convenience of separate domain data
 
-        NOTE: this is just a realization of two domains
+        NOTE: this is just a realization of two domains, not multiple domains actually
         '''
 
         # flatten into 1D array

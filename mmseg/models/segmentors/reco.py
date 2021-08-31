@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-28
-Last Modified: 2021-08-29
+Last Modified: 2021-08-31
 	content: 
 '''
 from copy import deepcopy
@@ -20,9 +20,21 @@ from .semi_v2 import SemiV2
 @SEGMENTORS.register_module()
 class ReCo(SemiV2):
     ''' my implementation of regional contrast algorithm for semi-supervised semantic segmentation
+
+    Args:
+        momentum (float): momentum to update the mean teacher model, 
     '''
 
-    def __init__(self, momentum, strong_thres, weak_thres, tmperature, num_queries, num_negatives, **kargs):
+    def __init__(self, 
+                momentum, 
+                strong_thres, 
+                weak_thres, 
+                tmperature, 
+                num_queries, 
+                num_negatives, 
+                apply_reco=True,
+                apply_pseudo_loss=True,
+                **kargs):
         super().__init__(**kargs)
         self.momentum = momentum
         self.strong_thres = strong_thres
@@ -30,6 +42,8 @@ class ReCo(SemiV2):
         self.tmperature = tmperature
         self.num_queries = num_queries
         self.num_negatives = num_negatives
+        self.apply_reco = apply_reco
+        self.apply_pseudo_loss = apply_pseudo_loss
 
     def init_weights(self):
         super().init_weights()
@@ -103,7 +117,6 @@ class ReCo(SemiV2):
 
         # 选取confidence大于预设值的做交叉熵
         batch_size = predict.shape[0]
-        # TODO: 这里为什么要用float呢
         valid_mask = (target >= 0).float()   # only count valid pixels
 
         # 对每个样本进行加权
@@ -132,8 +145,6 @@ class ReCo(SemiV2):
                                     size=unlabeled['img'].shape[2:],
                                     mode='bilinear',
                                     align_corners=self.align_corners)
-            # TODO: interpolate may not be need
-            # ema_pred = F.interpolate(ema_pred, size=labeled['gt_semantic_seg'].sahpe[1:], mode='bilinear', align_corners=self.align_corners)
             pseudo_logits, pseudo_labels = torch.max(ema_pred, dim=1)
 
         # supervised loss
@@ -144,28 +155,35 @@ class ReCo(SemiV2):
         pred_all = torch.cat((preds_l, preds_u))
 
         # pseudo label loss
-        unsup_loss = self.compute_unsupervised_loss(preds_u, pseudo_labels, pseudo_logits)
+        if self.apply_pseudo_loss:
+            unsup_loss = self.compute_unsupervised_loss(preds_u, pseudo_labels,
+                                                    pseudo_logits)
+        else:
+            unsup_loss = 0
 
         # ReCo loss
-        with torch.no_grad():
-            # mask
-            pseudo_mask = pseudo_logits.ge(self.weak_thres)
-            mask_all = torch.cat((labeled['gt_semantic_seg']>=0,
-                                pseudo_mask.unsqueeze(1)))
-            mask_all = resize(mask_all.float(), size=pred_all.shape[2:])
+        if self.apply_reco:
+            with torch.no_grad():
+                # mask
+                pseudo_mask = pseudo_logits.ge(self.weak_thres)
+                mask_all = torch.cat((labeled['gt_semantic_seg']>=0,
+                                    pseudo_mask.unsqueeze(1)))
+                mask_all = resize(mask_all.float(), size=pred_all.shape[2:])
 
-            # label
-            one_hot_label = self.label_onehot(labeled['gt_semantic_seg'])
-            one_hot_pseudo_label = self.label_onehot(pseudo_labels.unsqueeze(1))
-            label_all = torch.cat((one_hot_label, one_hot_pseudo_label))
-            label_all = resize(label_all.float(), size=pred_all.shape[2:])
+                # label
+                one_hot_label = self.label_onehot(labeled['gt_semantic_seg'])
+                one_hot_pseudo_label = self.label_onehot(pseudo_labels.unsqueeze(1))
+                label_all = torch.cat((one_hot_label, one_hot_pseudo_label))
+                label_all = resize(label_all.float(), size=pred_all.shape[2:])
 
-            # predicted probability
-            prob_l = torch.softmax(preds_l, dim=1)
-            prob_u = torch.softmax(preds_u, dim=1)
-            prob_all = torch.cat((prob_l, prob_u))
+                # predicted probability
+                prob_l = torch.softmax(preds_l, dim=1)
+                prob_u = torch.softmax(preds_u, dim=1)
+                prob_all = torch.cat((prob_l, prob_u))
 
-        reco_loss = self.compute_reco_loss(rep_all, label_all, mask_all, prob_all)
+            reco_loss = self.compute_reco_loss(rep_all, label_all, mask_all, prob_all)
+        else:
+            reco_loss = 0
 
         loss = dict()
         loss.update(sup_loss)
