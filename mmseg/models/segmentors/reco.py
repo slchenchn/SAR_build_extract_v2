@@ -146,8 +146,8 @@ class ReCo(SemiV2):
                                     size=labeled['img'].shape[2:],
                                     mode='bilinear',
                                     align_corners=self.align_corners)
-            # FIXME: this should be probability, not logit
-            pseudo_logits, pseudo_labels = torch.max(torch.softmax(ema_pred, dim=1), dim=1)
+                                    
+            pseudo_probs, pseudo_labels = torch.max(torch.softmax(ema_pred, dim=1), dim=1)
 
         # supervised loss
         preds_l, reps_l, sup_loss = self.main_forward(labeled['img'], 
@@ -160,7 +160,7 @@ class ReCo(SemiV2):
         # pseudo label loss
         if self.apply_pseudo_loss:
             unsup_loss = self.compute_unsupervised_loss(preds_u, pseudo_labels,
-                                                    pseudo_logits)
+                                                    pseudo_probs)
         else:
             unsup_loss = torch.tensor(0.0, device=labeled['img'].device)
 
@@ -168,7 +168,7 @@ class ReCo(SemiV2):
         if self.apply_reco:
             with torch.no_grad():
                 # mask
-                pseudo_mask = pseudo_logits.ge(self.weak_thres)
+                pseudo_mask = pseudo_probs.ge(self.weak_thres)
                 mask_all = torch.cat((labeled['gt_semantic_seg']>=0,
                                     pseudo_mask.unsqueeze(1)))
                 mask_all = resize(mask_all.float(), size=pred_all.shape[2:])
@@ -195,13 +195,13 @@ class ReCo(SemiV2):
 
         return loss
 
-    def compute_unsupervised_loss(self, predict, target, logits):
+    def compute_unsupervised_loss(self, predict, target, probs):
         ''' Compute pseudo labeling loss
 
         Args:
             predict (Tensor): model prediction logits
             target (Tensor): pseudo labels
-            logits (Tensor): logits corresponding pseudo labels
+            probs (Tensor): probilities corresponding pseudo labels
         '''
 
         # resize first
@@ -215,7 +215,7 @@ class ReCo(SemiV2):
         valid_mask = (target >= 0).float()   # only count valid pixels
 
         # 对每个样本进行加权
-        weighting = logits.view(batch_size, -1).ge(self.strong_thres).sum(-1) / valid_mask.view(batch_size, -1).sum(-1)
+        weighting = probs.view(batch_size, -1).ge(self.strong_thres).sum(-1) / valid_mask.view(batch_size, -1).sum(-1)
         loss = F.cross_entropy(predict, target, reduction='none', ignore_index=-1)
         # NOTE: there are unlabeled pixels in cityscapes, so here need to mask out them
         weighted_loss = torch.mean(torch.masked_select(weighting[:, None, None] * loss, loss > 0))
