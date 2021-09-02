@@ -162,7 +162,7 @@ class ReCo(SemiV2):
             unsup_loss = self.compute_unsupervised_loss(preds_u, pseudo_labels,
                                                     pseudo_logits)
         else:
-            unsup_loss = torch.tensor(0.0)
+            unsup_loss = torch.tensor(0.0, device=labeled['img'].device)
 
         # ReCo loss
         if self.apply_reco:
@@ -187,7 +187,7 @@ class ReCo(SemiV2):
 
             reco_loss = self.compute_reco_loss(rep_all, label_all, mask_all, prob_all)
         else:
-            reco_loss = torch.tensor(0.0)
+            reco_loss = torch.tensor(0.0, device=labeled['img'].device)
 
         loss = dict()
         loss.update(sup_loss)
@@ -278,9 +278,9 @@ class ReCo(SemiV2):
         # compute regional contrastive loss
         if len(seg_num_list) <= 1:  
             ''' in some rare cases, a small mini-batch might only contain 1 or no semantic class '''
-            return torch.tensor(0.0)
+            return torch.tensor(0.0, device=device)
         else:
-            reco_loss = torch.tensor(0.0)
+            reco_loss = torch.tensor(0.0, device=device)
             seg_proto = torch.cat(proto_list)   #prototype
             valid_seg = len(seg_num_list)
             seg_len = torch.arange(valid_seg)
