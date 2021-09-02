@@ -119,6 +119,7 @@ docs_zh-CN
 domo
 docker
 show_dir/
+tmp
 
 # Pytorch
 *.pth

@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-07-11
-Last Modified: 2021-09-01
+Last Modified: 2021-09-02
 	content: 
 '''
 
@@ -28,7 +28,6 @@ unlabeled_train_pipeline = [
     # dict(type='Normalize', **img_norm_cfg),
     # dict(type='Pad', size=(512, 512), pad_val=0, seg_pad_val=255),
     dict(type='DefaultFormatBundle'),
-    # dict(type='FormatBundle'),
     dict(type='Collect', keys=['img'])
 ]
 test_pipeline = [

@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-28
-Last Modified: 2021-09-01
+Last Modified: 2021-09-02
 	content: 
 '''
 from copy import deepcopy
@@ -63,7 +63,7 @@ class ReCo(SemiV2):
         self.num_negatives = num_negatives
         self.apply_reco = apply_reco
         self.apply_pseudo_loss = apply_pseudo_loss
-        self.unlabeled_aug = Compose(unlabeled_aug)
+        self.unlabeled_aug = {k:Compose(v) for k, v in unlabeled_aug.items()}
 
         # for updating EMA model
         self.step = 0
@@ -129,16 +129,21 @@ class ReCo(SemiV2):
         return preds, reps, loss
 
     def forward_train(self, labeled: dict, unlabeled: dict, **kargs):
-        # TODO: generate pseudo label via weak augments, and costrain consistency with strong augments
 
-        unlabeld_aug = self.unlabeled_aug(unlabeled['img'])
+        # generate strong and weak augmented unlabeled data
+        # NOTE: when use one variable for multiple times, BE CAREFUL to the inplace opterations !!!
+        unlabeled = {k: v(deepcopy(unlabeled))
+                        for k, v in self.unlabeled_aug.items()}
 
-        # generate pseudo labels for unlabeled data
+        for name, batch in unlabeled.items():
+            batch['img'] = batch['img'].to(labeled['img'].device)
+
+        # generate pseudo labels for weak augmented unlabeled data
         self.ema_update_whole()
         with torch.no_grad():
-            ema_pred = self.ema_forward(unlabeled['img'])
+            ema_pred = self.ema_forward(unlabeled['weak']['img'])
             ema_pred = resize(input=ema_pred,
-                                    size=unlabeled['img'].shape[2:],
+                                    size=labeled['img'].shape[2:],
                                     mode='bilinear',
                                     align_corners=self.align_corners)
             # FIXME: this should be probability, not logit
@@ -147,7 +152,7 @@ class ReCo(SemiV2):
         # supervised loss
         preds_l, reps_l, sup_loss = self.main_forward(labeled['img'], 
                                                     labeled['img_metas'], labeled['gt_semantic_seg'])
-        preds_u, reps_u, _ = self.main_forward(unlabeled['img'])
+        preds_u, reps_u, _ = self.main_forward(unlabeled['strong']['img'])
 
         rep_all = torch.cat((reps_l, reps_u))
         pred_all = torch.cat((preds_l, preds_u))

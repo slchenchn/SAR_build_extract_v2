@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-28
-Last Modified: 2021-09-01
+Last Modified: 2021-09-02
 	content: 
 '''
 
@@ -12,6 +12,9 @@ _base_ = [
     '../_base_/schedules/schedule_20k.py'
 ]
 
+img_norm_cfg = dict(
+    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+
 model = dict(
     type='ReCo',
     momentum = 0.99,
@@ -20,7 +23,13 @@ model = dict(
     tmperature = 0.5,
     num_queries = 256,
     num_negatives = 512,
-    unlabeled_aug = dict(type='PhotoMetricDistortion'),
+    unlabeled_aug = dict(strong=
+            [dict(type='BatchPhotoMetricDistortion'),
+            dict(type='BatchNormalize', **img_norm_cfg)
+            ],
+            weak=[dict(type='BatchNormalize', **img_norm_cfg),
+            ]
+    ),
 
     decode_head=dict(
         type = 'Depthwise2SeparableASPPHead',
