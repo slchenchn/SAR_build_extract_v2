@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-08
-Last Modified: 2021-08-29
+Last Modified: 2021-09-01
 	content: 
 '''
 
@@ -153,8 +153,8 @@ def main():
     if cfg.data.train.get('type', None):
         ''' single dataset'''
         datasets = [build_dataset(cfg.data.train)]
-        classes = datasets[0].CLASSES.CLASSES
-        palette = datasets[0].CLASSES.PALETTE
+        classes = datasets[0].CLASSES
+        palette = datasets[0].PALETTE
     elif cfg.data.train.get('labeled', None):
         ''' semi-supervise dataset '''
         datasets=[{k: build_dataset(v) for k, v in cfg.data.train.items()}]

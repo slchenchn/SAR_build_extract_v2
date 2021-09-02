@@ -1,18 +1,21 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-28
-Last Modified: 2021-08-31
+Last Modified: 2021-09-01
 	content: 
 '''
 from copy import deepcopy
 import torch
 from torch import Tensor
 import torch.nn.functional as F
+from torch.distributions.categorical import Categorical
 import numpy as np
+from torchvision.transforms.functional import normalize
+import mylib.image_utils as iu
 
 from mmseg.ops import resize
 from mmseg.core import add_prefix
-
+from mmseg.datasets.pipelines import Compose
 from ..builder import SEGMENTORS
 from .semi_v2 import SemiV2
 
@@ -22,18 +25,34 @@ class ReCo(SemiV2):
     ''' my implementation of regional contrast algorithm for semi-supervised semantic segmentation
 
     Args:
-        momentum (float): momentum to update the mean teacher model, 
+        momentum (float): momentum to update the mean teacher model, must
+            between [0, 1]. Default: 0.99
+        strong_thres (float): strong threshold to filter the difficult
+            samples, must between [0, 1]. Default: 0.97
+        weak_thres (float): weak threshold to filter the unsure
+            samples, must between [0, 1]. Default: 0.7
+        tmperature (float): tmperature in the contrastive loss. Default: 0.5
+        num_queries (int): number of queries in the contrastive loss.
+            Default: 256
+        num_negatives (int): number of negative samples in the contrastive
+            loss. Default: 512
+        apply_reco (bool): whether to apply regional contrast loss. 
+            Default: True
+        apply_pseudo_loss (bool): whether to apply pseudo labeling loss. 
+            Default: True
+        unlabeled_aug (list[dict]): Processing pipeline for unlabled data
     '''
 
     def __init__(self, 
-                momentum, 
-                strong_thres, 
-                weak_thres, 
-                tmperature, 
-                num_queries, 
-                num_negatives, 
+                momentum = 0.99,
+                strong_thres = 0.97,
+                weak_thres = 0.7,
+                tmperature = 0.5,
+                num_queries = 256,
+                num_negatives = 512,
                 apply_reco=True,
                 apply_pseudo_loss=True,
+                unlabeled_aug=None,
                 **kargs):
         super().__init__(**kargs)
         self.momentum = momentum
@@ -44,18 +63,23 @@ class ReCo(SemiV2):
         self.num_negatives = num_negatives
         self.apply_reco = apply_reco
         self.apply_pseudo_loss = apply_pseudo_loss
+        self.unlabeled_aug = Compose(unlabeled_aug)
+
+        # for updating EMA model
+        self.step = 0
 
     def init_weights(self):
         super().init_weights()
 
-        # EMA model
+        # init EMA model as the student
         self.backbone_ema = deepcopy(self.backbone)
         self.decode_head_ema = deepcopy(self.decode_head)
         if self.with_neck:
             self.neck_ema = deepcopy(self.neck)
 
     @staticmethod
-    def _ema_update(ema, model, decay):
+    def ema_update(ema, model, decay):
+        ''' update the EMA model with decay params specified '''
         for ema_param, param in zip(ema.parameters(), model.parameters()):
             ema_param.data = decay * ema_param.data + (1 - decay) * param.data
 
@@ -64,13 +88,13 @@ class ReCo(SemiV2):
         decay = min(1 - 1 / (self.step + 1), self.momentum)
         self.step += 1
 
-        ReCo._ema_update(self.backbone_ema, self.backbone, decay)
-        ReCo._ema_update(self.decode_head_ema, self.decode_head, decay)
+        ReCo.ema_update(self.backbone_ema, self.backbone, decay)
+        ReCo.ema_update(self.decode_head_ema, self.decode_head, decay)
         if self.with_neck:
-            ReCo._ema_update(self.neck_ema, self.neck, decay)
+            ReCo.ema_update(self.neck_ema, self.neck, decay)
 
     def ema_forward(self, img):
-        ''' Forward function of EMA model '''
+        ''' Forward function of EMA model, not including the loss calculation '''
         x = self.backbone_ema(img)
         if self.with_neck:
             x = self.neck_ema(x)
@@ -78,7 +102,7 @@ class ReCo(SemiV2):
         return preds
 
     def main_forward(self, img, img_metas=None, gt_semantic_seg=None):
-        ''' Forward function of the main model 
+        ''' Forward function of the main model, also calculate loss if GT is given
         
         Returns:
             preds (Tensor): prediction logits
@@ -104,51 +128,25 @@ class ReCo(SemiV2):
 
         return preds, reps, loss
 
-    def compute_unsupervised_loss(self, predict, target, logits):
-        ''' Adapted from original ReCo 
-        '''
-
-        # resize first
-        predict = resize(
-                input=predict,
-                size=target.shape[1:],
-                mode='bilinear',
-                align_corners=self.align_corners)
-
-        # 选取confidence大于预设值的做交叉熵
-        batch_size = predict.shape[0]
-        valid_mask = (target >= 0).float()   # only count valid pixels
-
-        # 对每个样本进行加权
-        weighting = logits.view(batch_size, -1).ge(self.strong_thres).sum(-1) / valid_mask.view(batch_size, -1).sum(-1)
-        loss = F.cross_entropy(predict, target, reduction='none', ignore_index=-1)
-        # TODO: 这个交叉熵怎么也不会小于等于零啊，为什么要选择呢，搞不懂
-        weighted_loss = torch.mean(torch.masked_select(weighting[:, None, None] * loss, loss > 0))
-        return weighted_loss
-
-    def label_onehot(self, inputs):
-        ''' Convert label to one-hot vector '''
-        batch_size, _, im_h, im_w = inputs.shape
-        num_classes = self.decode_head.num_classes
-        # remap invalid pixels (-1) into 0, otherwise we cannot create one-hot vector with negative labels.
-        # we will still mask out those invalid values in valid mask
-        inputs = torch.relu(inputs)
-        outputs = torch.zeros([batch_size, num_classes, im_h, im_w]).to(inputs.device)
-        return outputs.scatter_(1, inputs, 1.0)
-
     def forward_train(self, labeled: dict, unlabeled: dict, **kargs):
         # TODO: generate pseudo label via weak augments, and costrain consistency with strong augments
+
+        unlabeld_aug = self.unlabeled_aug(unlabeled['img'])
+
         # generate pseudo labels for unlabeled data
+        self.ema_update_whole()
         with torch.no_grad():
             ema_pred = self.ema_forward(unlabeled['img'])
             ema_pred = resize(input=ema_pred,
                                     size=unlabeled['img'].shape[2:],
                                     mode='bilinear',
                                     align_corners=self.align_corners)
-            pseudo_logits, pseudo_labels = torch.max(ema_pred, dim=1)
+            # FIXME: this should be probability, not logit
+            pseudo_logits, pseudo_labels = torch.max(torch.softmax(ema_pred, dim=1), dim=1)
 
         # supervised loss
-        preds_l, reps_l, sup_loss = self.main_forward(labeled['img'], labeled['img_metas'], labeled['gt_semantic_seg'])
+        preds_l, reps_l, sup_loss = self.main_forward(labeled['img'], 
+                                                    labeled['img_metas'], labeled['gt_semantic_seg'])
         preds_u, reps_u, _ = self.main_forward(unlabeled['img'])
 
         rep_all = torch.cat((reps_l, reps_u))
@@ -159,7 +157,7 @@ class ReCo(SemiV2):
             unsup_loss = self.compute_unsupervised_loss(preds_u, pseudo_labels,
                                                     pseudo_logits)
         else:
-            unsup_loss = 0
+            unsup_loss = torch.tensor(0.0)
 
         # ReCo loss
         if self.apply_reco:
@@ -172,7 +170,8 @@ class ReCo(SemiV2):
 
                 # label
                 one_hot_label = self.label_onehot(labeled['gt_semantic_seg'])
-                one_hot_pseudo_label = self.label_onehot(pseudo_labels.unsqueeze(1))
+                one_hot_pseudo_label = self.label_onehot(
+                                                    pseudo_labels.unsqueeze(1))
                 label_all = torch.cat((one_hot_label, one_hot_pseudo_label))
                 label_all = resize(label_all.float(), size=pred_all.shape[2:])
 
@@ -183,7 +182,7 @@ class ReCo(SemiV2):
 
             reco_loss = self.compute_reco_loss(rep_all, label_all, mask_all, prob_all)
         else:
-            reco_loss = 0
+            reco_loss = torch.tensor(0.0)
 
         loss = dict()
         loss.update(sup_loss)
@@ -191,87 +190,138 @@ class ReCo(SemiV2):
 
         return loss
 
-    def compute_reco_loss(self, rep, label, mask, prob):
-        ''' 
-        mask: labeled image的全部，unlabeled image中confidence大于某个值的
+    def compute_unsupervised_loss(self, predict, target, logits):
+        ''' Compute pseudo labeling loss
+
+        Args:
+            predict (Tensor): model prediction logits
+            target (Tensor): pseudo labels
+            logits (Tensor): logits corresponding pseudo labels
         '''
-        batch_size, num_feat, im_w_, im_h = rep.shape
-        num_classes = label.shape[1]   # 应该是 num_classes
+
+        # resize first
+        predict = resize(
+                input=predict,
+                size=target.shape[1:],
+                mode='bilinear',
+                align_corners=self.align_corners)
+
+        batch_size = predict.shape[0]
+        valid_mask = (target >= 0).float()   # only count valid pixels
+
+        # 对每个样本进行加权
+        weighting = logits.view(batch_size, -1).ge(self.strong_thres).sum(-1) / valid_mask.view(batch_size, -1).sum(-1)
+        loss = F.cross_entropy(predict, target, reduction='none', ignore_index=-1)
+        # NOTE: there are unlabeled pixels in cityscapes, so here need to mask out them
+        weighted_loss = torch.mean(torch.masked_select(weighting[:, None, None] * loss, loss > 0))
+        return weighted_loss
+
+    def label_onehot(self, inputs):
+        ''' Convert indexed label to one-hot vector '''
+        batch_size, _, im_h, im_w = inputs.shape
+        num_classes = self.decode_head.num_classes
+        # remap invalid pixels (-1) into 0, otherwise we cannot create one-hot vector with negative labels.
+        # we will still mask out those invalid values in valid mask
+        inputs = torch.relu(inputs)
+        outputs = torch.zeros([batch_size, num_classes, im_h, im_w]).to(inputs.device)
+        return outputs.scatter_(1, inputs, 1.0)
+
+    def compute_reco_loss(self, rep, label, mask, prob):
+        ''' Compute regional contrast loss, contrast pixel embeddings with class meann embeddings actually
+
+        Args:
+            rep (Tensor): representation of all samples
+            label (Tensor): one-hot labels of all samples
+            mask (Tensor): all elements of labeled images, and elements with
+                confidence greater than weak threshold in unlabeled images
+            prob (Tensor): probabilities of all samples
+        '''
+        _, num_feat, im_w_, im_h = rep.shape
         device = rep.device
 
-        # compute valid binary mask for each pixel
+        # compute valid binary mask for each pixel, shape: BxCxHxW
         valid_pixel = label * mask
 
         # permute representation for indexing: B x H x W x C
         rep = rep.permute(0, 2, 3, 1)
 
         # compute prototype (class mean representation) for each class across all valid pixels
-        seg_feat_all_list = []
-        seg_feat_hard_list = []
+        feat_all_list = []
+        feat_hard_list = []
         seg_num_list = []
-        seg_proto_list = []
-        for i in range(num_classes):
-            valid_pixel_seg = valid_pixel[:, i]  # select binary mask for i-th class
-            if valid_pixel_seg.sum() == 0:  # not all classes would be available in a mini-batch
+        proto_list = []
+        for i in range(self.num_classes):
+
+            #select binary mask for i-th class
+            valid_pixel_seg = valid_pixel[:, i, ...]
+            if valid_pixel_seg.sum() == 0:  
+                ''' not all classes would be available in a mini-batch '''
                 continue
 
             prob_seg = prob[:, i, :, :]
-            # 原来unlabeledd data不仅要大于weak_thres，还要小于strong_thres，这里的hard是difficult的意思
-            rep_mask_hard = (prob_seg < self.strong_thres) * valid_pixel_seg.bool()  # select hard queries
 
-            # prototype
-            seg_proto_list.append(torch.mean(rep[valid_pixel_seg.bool()], dim=0, keepdim=True))
-            seg_feat_all_list.append(rep[valid_pixel_seg.bool()])
-            # 作为query像素的数量
-            seg_feat_hard_list.append(rep[rep_mask_hard])   
+            # select hard pixels (confidence < strong threshold), besides, for unlabeled pixels, its confidence should also be greater than the weak threshold
+            rep_mask_hard = (prob_seg < self.strong_thres) * valid_pixel_seg.bool()
+
+            # generate prototypes' embeddings
+            proto_list.append(torch.mean(rep[valid_pixel_seg.bool()], dim=0, keepdim=True))
+            feat_all_list.append(rep[valid_pixel_seg.bool()])
+            feat_hard_list.append(rep[rep_mask_hard])
+            # number of valid pixels of the ith class
             seg_num_list.append(int(valid_pixel_seg.sum().item()))  
 
         # compute regional contrastive loss
-        if len(seg_num_list) <= 1:  # in some rare cases, a small mini-batch might only contain 1 or no semantic class
+        if len(seg_num_list) <= 1:  
+            ''' in some rare cases, a small mini-batch might only contain 1 or no semantic class '''
             return torch.tensor(0.0)
         else:
             reco_loss = torch.tensor(0.0)
-            seg_proto = torch.cat(seg_proto_list)   #prototype
+            seg_proto = torch.cat(proto_list)   #prototype
             valid_seg = len(seg_num_list)
             seg_len = torch.arange(valid_seg)
 
             for i in range(valid_seg):
-                # sample hard queries, 这里的hard是difficult的意思
-                if len(seg_feat_hard_list[i]) > 0:
-                    seg_hard_idx = torch.randint(len(seg_feat_hard_list[i]), size=(self.num_queries,))
-                    anchor_feat_hard = seg_feat_hard_list[i][seg_hard_idx]
+                if len(feat_hard_list[i]) > 0:
+                    # sample fixed number of hard queries, even the actual number of queries small than required
+                    seg_hard_idx = torch.randint(len(feat_hard_list[i]), size=(self.num_queries,))
+                    anchor_feat_hard = feat_hard_list[i][seg_hard_idx]
                     anchor_feat = anchor_feat_hard
-                else:  # in some rare cases, all queries in the current query class are easy
+                else:  
+                    ''' in some rare cases, all queries in the current query class are easy '''
                     continue
 
-                # apply negative key sampling (with no gradients)
+                # negative key sampling (with no gradients)
                 with torch.no_grad():
-                    # generate index mask for the current query class; e.g. [0, 1, 2] -> [1, 2, 0] -> [2, 0, 1]
+                    # generate index mask for the current query class,
+                    # e.g. [0, 1, 2] -> [1, 2, 0] -> [2, 0, 1]
                     seg_mask = torch.cat(([seg_len[i:], seg_len[:i]]))
 
-                    # compute similarity for each negative segment prototype (semantic class relation graph)
+                    # compute similarity for each segment prototype (semantic class relation graph) for the following negative pixel sampling
                     proto_sim = torch.cosine_similarity(seg_proto[seg_mask[0]].unsqueeze(0), seg_proto[seg_mask[1:]], dim=1)
-                    proto_prob = torch.softmax(proto_sim / self.tmperature, dim=0)
+                    proto_prob = torch.softmax(proto_sim / self.tmperature,
+                                                dim=0)
 
                     # sampling negative keys based on the generated distribution [num_queries x num_negatives]
-                    negative_dist = torch.distributions.categorical.Categorical(probs=proto_prob)
-                    samp_class = negative_dist.sample(sample_shape=[self.num_queries, self.num_negatives])
+                    negative_dist = Categorical(probs=proto_prob)
+                    samp_class = negative_dist.sample(
+                        sample_shape=[self.num_queries, self.num_negatives])
                     samp_num = torch.stack([(samp_class == c).sum(1) for c in range(len(proto_prob))], dim=1)
 
                     # sample negative indices from each negative class
                     negative_num_list = seg_num_list[i+1:] + seg_num_list[:i]
-                    negative_index = negative_index_sampler(samp_num, negative_num_list)
+                    negative_index = negative_index_sampler(samp_num,
+                                                            negative_num_list)
 
                     # index negative keys (from other classes)
-                    negative_feat_all = torch.cat(seg_feat_all_list[i+1:] + seg_feat_all_list[:i])
-                    negative_feat = negative_feat_all[negative_index].reshape(self.num_queries, self.num_negatives, num_feat) # 这都能reshape回来
+                    negative_feat_all = torch.cat(feat_all_list[i+1:] + feat_all_list[:i])
+                    negative_feat = negative_feat_all[negative_index].reshape(self.num_queries, self.num_negatives, num_feat) 
 
                     # combine positive and negative keys: keys = [positive key | negative keys] with 1 + num_negative dim
                     positive_feat = seg_proto[i].unsqueeze(0).unsqueeze(0).repeat(self.num_queries, 1, 1)
                     all_feat = torch.cat((positive_feat, negative_feat), dim=1)
 
                 seg_logits = torch.cosine_similarity(anchor_feat.unsqueeze(1), all_feat, dim=2)
-                reco_loss = reco_loss + F.cross_entropy(seg_logits / self.tmperature, torch.zeros(self.num_queries).long().to(device))
+                reco_loss += F.cross_entropy(seg_logits / self.tmperature, torch.zeros(self.num_queries).long().to(device))
             return reco_loss / valid_seg
 
     def encode_decode(self, img, img_metas):

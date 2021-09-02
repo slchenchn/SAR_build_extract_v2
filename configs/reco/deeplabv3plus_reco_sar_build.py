@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-28
-Last Modified: 2021-08-29
+Last Modified: 2021-09-01
 	content: 
 '''
 
@@ -20,6 +20,7 @@ model = dict(
     tmperature = 0.5,
     num_queries = 256,
     num_negatives = 512,
+    unlabeled_aug = dict(type='PhotoMetricDistortion'),
 
     decode_head=dict(
         type = 'Depthwise2SeparableASPPHead',

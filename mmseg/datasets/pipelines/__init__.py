@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-07-12
-Last Modified: 2021-08-11
+Last Modified: 2021-09-01
 	content: 
 '''
 from .compose import Compose
@@ -15,7 +15,6 @@ from .transforms import (CLAHE, AdjustGamma, Normalize, Pad,
 from .loading_npy import LoadNpyFromFile, LoadNpyFromFileRotate
 from .loading_npy_pca import LoadNpyFromFilePCA
 from .fda import FourierDomainAdaptation
-from .formating_domain_adaptation import CollectDA
 
 # __all__ = [
 #     'Compose', 'to_tensor', 'ToTensor', 'ImageToTensor', 'ToDataContainer',
