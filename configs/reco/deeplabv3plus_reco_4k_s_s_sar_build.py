@@ -1,13 +1,13 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-28
-Last Modified: 2021-09-02
+Last Modified: 2021-09-03
 	content: 
 '''
 
 _base_ = [
     '../_base_/models/deeplabv3plus_r50-d8.py',
-    '../_base_/datasets/semi_sar_building_rs2.py', 
+    '../_base_/datasets/semi_s_s_sar_building_rs2.py', 
     '../_base_/default_runtime.py',
     '../_base_/schedules/schedule_20k.py'
 ]
@@ -23,13 +23,6 @@ model = dict(
     tmperature = 0.5,
     num_queries = 256,
     num_negatives = 512,
-    unlabeled_aug = dict(strong=
-            [dict(type='BatchPhotoMetricDistortion'),
-            dict(type='BatchNormalize', **img_norm_cfg)
-            ],
-            weak=[dict(type='BatchNormalize', **img_norm_cfg),
-            ]
-    ),
 
     decode_head=dict(
         type = 'Depthwise2SeparableASPPHead',

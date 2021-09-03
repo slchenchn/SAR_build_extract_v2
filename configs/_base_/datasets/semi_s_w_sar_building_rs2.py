@@ -2,7 +2,7 @@
 Author: Shuailin Chen
 Created Date: 2021-07-11
 Last Modified: 2021-09-02
-	content: 
+	content: strong & weak augs for unlabeled data, weak augs for labeled data
 '''
 
 dataset_type = 'Sar_building'
@@ -15,7 +15,7 @@ train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', reduce_zero_label=False),
     dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='PhotoMetricDistortion'),
+    # dict(type='PhotoMetricDistortion'),
     dict(type='Normalize', **img_norm_cfg),
     # dict(type='Pad', size=(512, 512), pad_val=0, seg_pad_val=255),
     dict(type='DefaultFormatBundle'),

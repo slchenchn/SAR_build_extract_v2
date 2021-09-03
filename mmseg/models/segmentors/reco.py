@@ -1,7 +1,7 @@
 '''
 Author: Shuailin Chen
 Created Date: 2021-08-28
-Last Modified: 2021-09-02
+Last Modified: 2021-09-03
 	content: 
 '''
 from copy import deepcopy
@@ -63,7 +63,11 @@ class ReCo(SemiV2):
         self.num_negatives = num_negatives
         self.apply_reco = apply_reco
         self.apply_pseudo_loss = apply_pseudo_loss
-        self.unlabeled_aug = {k:Compose(v) for k, v in unlabeled_aug.items()}
+        if unlabeled_aug is not None:
+            self.unlabeled_aug = {k:Compose(v) 
+                                for k, v in unlabeled_aug.items()}
+        else:
+             self.unlabeled_aug = None
 
         # for updating EMA model
         self.step = 0
@@ -132,11 +136,17 @@ class ReCo(SemiV2):
 
         # generate strong and weak augmented unlabeled data
         # NOTE: when use one variable for multiple times, BE CAREFUL to the inplace opterations !!!
-        unlabeled = {k: v(deepcopy(unlabeled))
-                        for k, v in self.unlabeled_aug.items()}
 
-        for name, batch in unlabeled.items():
-            batch['img'] = batch['img'].to(labeled['img'].device)
+        # TODO: check this snippet of code
+        if self.unlabeled_aug:
+            unlabeled = {k: v(deepcopy(unlabeled))
+                            for k, v in self.unlabeled_aug.items()}
+
+            for name, batch in unlabeled.items():
+                batch['img'] = batch['img'].to(labeled['img'].device)
+        else:
+            unlabeled = dict(strong=unlabeled)
+            unlabeled['weak'] = deepcopy(unlabeled['strong'])
 
         # generate pseudo labels for weak augmented unlabeled data
         self.ema_update_whole()
