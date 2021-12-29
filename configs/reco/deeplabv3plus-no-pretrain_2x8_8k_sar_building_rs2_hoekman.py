@@ -13,7 +13,8 @@ _base_=[
 ]
 
 model = dict(
-    pretrained='open-mmlab://resnet50_v1c',
+    pretrained=None,
+    # pretrained='open-mmlab://resnet50_v1c',
     backbone=dict(
         # type='ResNetV1cMulti',
         in_channels = 9,
@@ -22,9 +23,9 @@ model = dict(
 )
 
 
-runner = dict(type='IterBasedRunner', max_iters=4000)
+runner = dict(type='IterBasedRunner', max_iters=8000)
 optimizer = dict(type='SGD', lr=0.005, momentum=0.9, weight_decay=0.005)
 optimizer_config = dict()
 lr_config = dict(policy='poly', power=0.9, min_lr=0.001, by_epoch=False)
 checkpoint_config = dict(by_epoch=False, interval=300000)
-evaluation = dict(interval=400, metric='mIoU')
+evaluation = dict(interval=800, metric='mIoU')
