@@ -1,3 +1,9 @@
+'''
+Author: Shuailin Chen
+Created Date: 2021-08-05
+Last Modified: 2021-09-03
+	content: 
+'''
 import warnings
 from copy import deepcopy
 
@@ -631,6 +637,7 @@ class SwinTransformer(BaseModule):
             norm_cfg=norm_cfg if patch_norm else None,
             init_cfg=None)
 
+        # the relative positional embedding is implemented in the SwinBlockSequence as qkv_bias
         if self.use_abs_pos_embed:
             patch_row = pretrain_img_size[0] // patch_size
             patch_col = pretrain_img_size[1] // patch_size
